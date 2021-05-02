@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<style>
+		#content{
+			width:1280px;
+			height:720px;
+			border:solid 1px;
+			position:relative;
+			top:0px;
+		}
+		.track{
+			position:absolute;
+			width:150px;
+			height:670px;
+			border:solid 1px;
+		}
+		#track1{
+			left:340px;
+		}
+		#track2{
+			left:490px;
+		}
+		#track3{
+			left:640px;
+		}
+		#track4{
+			left:790px;
+		}
+		.span{
+			position:absolute;
+			top:670px;
+			width:150px;
+			height:50px;
+			border:solid 1px;	
+		}
+		#span1{
+			left: 340px;
+		}
+		#span2{
+			left:490px;
+		}
+		#span3{
+			left:640px;
+		}
+		#span4{
+			left:790px;
+		}
+
+		#testbox{
+			position:absolute;
+			top:800px;
+			left:500px;
+			width:500px;
+			height:200px;
+			border:solid 1px;
+		}
+	</style>
+	<script>
+
+		//------------------------------------声明区----------------------------------
+		function $(s){                       //经常用到这个函数，做一个伪宏定义
+			return document.getElementById(s);
+		}
+
+		var tra1Notes = new Array();//分别存储四个轨道的音符对象
+		var tra2Notes = new Array();
+		var tra3Notes = new Array();
+		var tra4Notes = new Array();
+
+		var life=100;
+		var loselife=1      //在创建不同乐谱时，loselife的值应当可以自定义
+		var combo=0;
+
+		var scoreBox={       //定义一个分数对象
+			score:0,
+			maxCombo:0,
+			maxPlus:0,
+			max:0,
+			just:0,
+			good:0,
+			miss:0,
+		}
+
+		var noteAttrTest = new Object;    //测试用音符属性盒子
+                noteAttrTest = {
+                		border  : "1px solid",
+                        width   : "100px",
+                        height  : "40px",
+                        position: "absolute",
+                        top     : "30px",
+                        left    : "25px",
+            };
+
+		var Note={                          //创建模拟类：音符
+			createNew:function(){				//类的实例化函数
+				var note={};                    //对象体，有两个实例字段，startTime和ele
+				var d = new Date;
+				note.startTime = d.getTime();
+				var a=document.createElement("span");  //创建html元素
+				for(var s in noteAttrTest){
+            		a.style[s]=noteAttrTest[s];
+            	}
+            	a.class="note";
+				note.ele = a;
+				return note;
+			},
+		}
+
+		
+
+		function miss(){
+			life=life-loselife;
+			if(life<=0)
+			{
+				life=0;
+				$("lifeNumber").innerHTML=life+"";
+
+				//youFail();    定义一个函数让游戏结束
+			}
+			$("lifeNumber").innerHTML=life+"";
+
+			scoreBox.miss+=1;
+			combo=0;
+		}
+
+
+		function beatStart(){                              //控制键盘按下的函数
+			var flag1 = false;                             //onkeydown事件会在
+			var flag2 = false;
+			var flag3 = false;
+			var flag4 = false;
+			document.onkeydown = function(event){
+				var e = event || window.event;
+				if(e.keyCode==68){                          //D键
+					if(flag1==true)
+						return;
+					flag1=true;
+					var y=parseInt(tra1Notes[0].ele.style.top)
+					if(y>=630&&y<=720){
+						if(y>=670&&y<680)                     //max+
+						{
+							scoreBox.maxPlus+=1;
+							tra1Notes[0].ele.remove();
+							tra1Notes.shift();
+
+						}else if(y>=660&&y<=670||y>680&&y<690){  //max
+							scoreBox.max+=1;
+							tra1Notes[0].ele.remove();
+							tra1Notes.shift();
+						}else if(y>640&&y<=660||y>690&&y<=710){  //just
+							scoreBox.just+=1;
+							tra1Notes[0].ele.remove();
+							tra1Notes.shift();
+						}else if(y>630&&y<=640||y>710&&y<=720){  //good
+							scoreBox.good+=1;
+							tra1Notes[0].ele.remove();
+							tra1Notes.shift();
+						}
+					}
+				}else if(e.keyCode==70){                  //F键
+					if(flag2==true)
+						return;
+					flag2=true;
+					var y=parseInt(tra2Notes[0].ele.style.top)
+					if(y>=630&&y<=720){
+						if(y>=670&&y<680)                     //max+
+						{
+							scoreBox.maxPlus+=1;
+							tra2Notes[0].ele.remove();
+							tra2Notes.shift();
+						}else if(y>=660&&y<=670||y>680&&y<690){  //max
+							scoreBox.max+=1;
+							tra2Notes[0].ele.remove();
+							tra2Notes.shift();
+						}else if(y>640&&y<=660||y>690&&y<=710){  //just
+							scoreBox.just+=1;
+							tra2Notes[0].ele.remove();
+							tra2Notes.shift();
+						}else if(y>630&&y<=640||y>710&&y<=720){  //good
+							scoreBox.good+=1;
+							tra2Notes[0].ele.remove();
+							tra2Notes.shift();
+						}
+					}
+				}else if(e.keyCode==74){                  //J键
+					if(flag3==true)
+						return;
+					flag3=true;
+					var y=parseInt(tra3Notes[0].ele.style.top)
+					if(y>=630&&y<=720){
+						if(y>=670&&y<680)                     //max+
+						{
+							scoreBox.maxPlus+=1;
+							tra3Notes[0].ele.remove();
+							tra3Notes.shift();
+						}else if(y>=660&&y<=670||y>680&&y<690){  //max
+							scoreBox.max+=1;
+							tra3Notes[0].ele.remove();
+							tra3Notes.shift();
+						}else if(y>640&&y<=660||y>690&&y<=710){  //just
+							scoreBox.just+=1;
+							tra3Notes[0].ele.remove();
+							tra3Notes.shift();
+						}else if(y>630&&y<=640||y>710&&y<=720){  //good
+							scoreBox.good+=1;
+							tra3Notes[0].ele.remove();
+							tra3Notes.shift();
+						}
+					}
+				}else if(e.keyCode==75){                  //K键
+					if(flag4==true)
+						return;
+					flag4=true;
+					var y=parseInt(tra4Notes[0].ele.style.top)
+					if(y>=630&&y<=720){
+						if(y>=670&&y<680)                     //max+
+						{
+							scoreBox.maxPlus+=1;
+							tra4Notes[0].ele.remove();
+							tra4Notes.shift();
+						}else if(y>=660&&y<=670||y>680&&y<690){  //max
+							scoreBox.max+=1;
+							tra4Notes[0].ele.remove();
+							tra4Notes.shift();
+						}else if(y>640&&y<=660||y>690&&y<=710){  //just
+							scoreBox.just+=1;
+							tra4Notes[0].ele.remove();
+							tra4Notes.shift();
+						}else if(y>630&&y<=640||y>710&&y<=720){  //good
+							scoreBox.good+=1;
+							tra4Notes[0].ele.remove();
+							tra4Notes.shift();
+						}
+					}
+				}
+			}
+			document.onkeyup = function(event){
+				var e = event || window.event;
+				if(e.keyCode==68){
+					flag1=false;
+				}else if(e.keyCode==70){
+					flag2=false;
+				}else if(e.keyCode==74){
+					flag3=false;
+				}else if(e.keyCode==75){
+					flag4=false;
+				}
+			}
+		}
+
+		function move(){                                       //移动函数，负责移动和删除
+			 function modifyY(){
+				var timer = new Date();	
+				for(var s in tra1Notes){									//track1
+					var y=(timer.getTime()-tra1Notes[s].startTime)*0.3;
+					if(y<790)
+						tra1Notes[s].ele.style.top=y+"px";
+					else{
+						tra1Notes[s].ele.remove();
+						tra1Notes.shift();
+						miss();
+
+						//这里要执行一个操作，让连击数（combo）等于0
+					}
+				}
+				for(var s in tra2Notes){									//track2
+					var y=(timer.getTime()-tra2Notes[s].startTime)*0.3;
+					if(y<790)
+						tra2Notes[s].ele.style.top=y+"px";
+					else{
+						tra2Notes[s].ele.remove();
+						tra2Notes.shift();
+						miss();
+						//这里要执行一个操作，让连击数（combo）等于0
+					}
+				}
+				for(var s in tra3Notes){									//track3
+					var y=(timer.getTime()-tra3Notes[s].startTime)*0.3;
+					if(y<790)
+						tra3Notes[s].ele.style.top=y+"px";
+					else{
+						tra3Notes[s].ele.remove();
+						tra3Notes.shift();
+						miss();
+						//这里要执行一个操作，让连击数（combo）等于0
+					}
+				}
+				for(var s in tra4Notes){									//track4
+					var y=(timer.getTime()-tra4Notes[s].startTime)*0.3;
+					if(y<790)
+						tra4Notes[s].ele.style.top=y+"px";
+					else{
+						tra4Notes[s].ele.remove();
+						tra4Notes.shift();
+						miss();
+						//这里要执行一个操作，让连击数（combo）等于0
+					}
+				}
+				/*for(var s in tra1Notes){
+					alert(timer.getTime()-tra1Notes[s].startTime);
+				}测试时间获取正常与否的语句*/
+			}
+			setInterval(modifyY,16);
+		}
+
+
+
+		//---------------------------------------游戏启动代码--------------------------------------
+		/*window.onload = function gameStart(){
+
+		}*/
+
+		//--------------------------以下是testbox的代码，用于开发测试-------------------------------
+
+		
+
+		function makeaNoteToTrack1(){
+			var newNote = Note.createNew();
+            document.getElementById("track1").appendChild(newNote.ele);
+            tra1Notes.push(newNote);
+            //alert(newNote.startTime);
+		}
+
+		function makeaNoteToTrack2(){
+			var newNote = Note.createNew();
+            document.getElementById("track2").appendChild(newNote.ele);
+            tra2Notes.push(newNote);
+            //alert(newNote.startTime);
+		}
+
+		function makeaNoteToTrack3(){
+			var newNote = Note.createNew();
+            document.getElementById("track3").appendChild(newNote.ele);
+            tra3Notes.push(newNote);
+            //alert(newNote.startTime);
+		}
+
+		function makeaNoteToTrack4(){
+			var newNote = Note.createNew();
+            document.getElementById("track4").appendChild(newNote.ele);
+            tra4Notes.push(newNote);
+            //alert(newNote.startTime);
+		}
+
+
+
+	</script>
+	<!--link rel="stylesheet" type="text/css" href="*.css"-->
+	<!--script type="text/javascript" src=""><script-->
+</head>
+<body>
+	<div id="progressBar"></div>              <!--进度条-->
+	
+	<div id="content">
+		
+
+		<div id="track1" class="track"></div>
+		<div id="track2" class="track"></div>
+		<div id="track3" class="track"></div>
+		<div id="track4" class="track"></div>
+		<div id="span1" class="span"></div>
+		<div id="span2" class="span"></div>
+		<div id="span3" class="span"></div>
+		<div id="span4" class="span"></div>
+		<div id="score">score:<p id="scoreNumber">0</p></div>  			<!--分数-->
+		<div id="life">life:<p id="lifeNumber">100</p></div>				<!--生命值-->
+		<div id="max+">max+</div>
+		<div id="max">max</div>
+		<div id="just">just</div>
+		<div id="good">good</div>
+		<div id="miss">miss</div>
+		<div id="combo">combo</div>
+	</div>
+
+	<div id="testbox">
+		<input type="button" value="generateNote1" onclick="makeaNoteToTrack1()">
+		<input type="button" value="generateNote2" onclick="makeaNoteToTrack2()">
+		<input type="button" value="generateNote3" onclick="makeaNoteToTrack3()">
+		<input type="button" value="generateNote4" onclick="makeaNoteToTrack4()">
+		<input type="button" value="move" onclick="move()">
+		<input type="button" value="beatStart" onclick="beatStart()">
+		<p id="tmax+"></p>
+		<p id="tmax"></p>
+		<p id="tjust"></p>
+		<p id="tgood"></p>
+		<p id="tmiss"></p>
+		<p id="tcombo"></p>
+	</div>
+	<script>
+		function testStatistics(){
+			$("tmax+").innerHTML="max+:"+scoreBox.maxPlus;
+			$("tmax").innerHTML="max:"+scoreBox.max;
+			$("tjust").innerHTML="just:"+scoreBox.just;
+			$("tgood").innerHTML="good:"+scoreBox.good;
+			$("tmiss").innerHTML="miss:"+scoreBox.miss;
+			$("tcombo").innerHTML="combo:"+combo;
+		}
+		setInterval(testStatistics,1000);
+	</script>
+</body>
+</html>
