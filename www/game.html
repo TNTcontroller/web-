@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>Document</title>
+	<title>平面国音游</title>
 	<style>
 		#content{
 			width:1280px;
@@ -65,6 +65,35 @@
 			return document.getElementById(s);
 		}
 
+		var bpm=158;
+		var speed=0.1;       //音符移动速度单位是千像素每秒
+		var k = 10;         //判定范围与音符移动速度的比例系数
+
+
+		function Sp(){
+			;
+		}
+		
+		Sp.prototype.y1=-45+k*speed*5;                   //中点起-45
+		Sp.prototype.y2=-45+k*speed*15;
+		Sp.prototype.y3=-45+k*speed*35;
+		Sp.prototype.y4=-45+k*speed*45;
+		Sp.prototype.v1=-45-k*speed*5;
+		Sp.prototype.v2=-45-k*speed*15;
+		Sp.prototype.v3=-45-k*speed*35;
+		Sp.prototype.v4=-45-k*speed*45;
+		Sp.prototype.refresh=function(){
+			Sp.prototype.y1=-45+k*speed*5;
+			Sp.prototype.y2=-45+k*speed*15;
+			Sp.prototype.y3=-45+k*speed*35;
+			Sp.prototype.y4=-45+k*speed*45;
+			Sp.prototype.v1=-45-k*speed*5;
+			Sp.prototype.v2=-45-k*speed*15;
+			Sp.prototype.v3=-45-k*speed*35;
+			Sp.prototype.v4=-45-k*speed*45;
+		};
+		var sp = new Sp();
+
 		var tra1Notes = new Array();//分别存储四个轨道的音符对象
 		var tra2Notes = new Array();
 		var tra3Notes = new Array();
@@ -82,34 +111,59 @@
 			just:0,
 			good:0,
 			miss:0,
-		}
+		};
 
-		var noteAttrTest = new Object;    //测试用音符属性盒子
-                noteAttrTest = {
+		var noteAttr = new Object;    //短音符属性盒子
+                noteAttr = {
                 		border  : "1px solid",
                         width   : "100px",
                         height  : "40px",
                         position: "absolute",
-                        top     : "30px",
+                        bottom     : "720px",
                         left    : "25px",
             };
 
-		var Note={                          //创建模拟类：音符
+		var Note={                          //创建模拟类：短音符
 			createNew:function(){				//类的实例化函数
 				var note={};                    //对象体，有两个实例字段，startTime和ele
 				var d = new Date;
 				note.startTime = d.getTime();
 				var a=document.createElement("span");  //创建html元素
-				for(var s in noteAttrTest){
-            		a.style[s]=noteAttrTest[s];
+				for(var s in noteAttr){
+            		a.style[s]=noteAttr[s];
             	}
-            	a.class="note";
 				note.ele = a;
+				note.islNote=false;
 				return note;
 			},
 		}
 
-		
+		var longNoteAttr = new Object ;  //长音符属性盒子
+				longNoteAttr={
+						border  : "1px solid",
+						width   : "100px",
+						//height不写
+						position: "absolute",
+						bottom     : "720px",
+						left    : "25px", 
+
+		};
+
+		var longNote={                      //创建模拟类：长音符,
+			createNew:function(length){
+				var lnote={};                         //有两个实例字段，startTime和ele
+				var d = new Date ;
+				lnote.startTime = d.getTime();
+				var a = document.createElement("span");
+				for(var s in longNoteAttr){
+					a.style[s] = longNoteAttr[s];
+				}
+				a.style.height = length+"px";
+				lnote.ele=a;
+				lnote.islNote=true;
+				return lnote;
+			},
+		}
 
 		function miss(){
 			life=life-loselife;
@@ -127,120 +181,177 @@
 		}
 
 
+		var lFlag1 = false;                           //lFlag表示长音符是否被击中
+		var lFlag2 = false;
+		var lFlag3 = false;
+		var lFlag4 = false;
 		function beatStart(){                              //控制键盘按下的函数
-			var flag1 = false;                             //onkeydown事件会在
-			var flag2 = false;
-			var flag3 = false;
+			var flag1 = false;                             //onkeydown事件会在键盘的一个键被持续按下的时候不断地发生，要用onkeyup来修正
+			var flag2 = false;                                               //发现待解决新问题！！！！判定范围大小应当与速度成正比，
+			var flag3 = false;												//否则速度快了就很难击中音符
 			var flag4 = false;
+
+			
+						//p.s我是散兵，之前写的时候干嘛要用top属性，用bottom属性的话，写长音符的时候就不用加修正量了
 			document.onkeydown = function(event){
 				var e = event || window.event;
 				if(e.keyCode==68){                          //D键
-					if(flag1==true)
+					if(flag1==true)                         //判断是否是重复的键盘按下事件
 						return;
 					flag1=true;
-					var y=parseInt(tra1Notes[0].ele.style.top)
-					if(y>=630&&y<=720){
-						if(y>=670&&y<680)                     //max+
+
+					var y=parseInt(tra1Notes[0].ele.style.bottom)
+					if(y<=sp.y4&&y>=sp.v4){										//判定横线的中点为-45
+						if(tra1Notes[0].islNote==true){                         //长音符情况
+							lFlag1=true;
+							scoreBox.maxPlus+=1;
+							combo+=1;
+							return;
+						}
+
+						if(y<=sp.y1&&y>sp.v1)                     //max+ 判定范围正负5的倍数
 						{
 							scoreBox.maxPlus+=1;
 							tra1Notes[0].ele.remove();
 							tra1Notes.shift();
 
-						}else if(y>=660&&y<=670||y>680&&y<690){  //max
+						}else if(y<=sp.y2&&y>=sp.y1||y<sp.v1&&y>=sp.v2){  //max         范围正负15到5的倍数 
 							scoreBox.max+=1;
 							tra1Notes[0].ele.remove();
 							tra1Notes.shift();
-						}else if(y>640&&y<=660||y>690&&y<=710){  //just
+						}else if(y<sp.y3&&y>=sp.y2||y<sp.v2&&y>=sp.v3){  //just
 							scoreBox.just+=1;
 							tra1Notes[0].ele.remove();
 							tra1Notes.shift();
-						}else if(y>630&&y<=640||y>710&&y<=720){  //good
+						}else if(y<sp.y4&&y>=sp.y3||y<sp.v3&&y>=sp.v4){  //good
 							scoreBox.good+=1;
 							tra1Notes[0].ele.remove();
 							tra1Notes.shift();
 						}
+						combo+=1;
 					}
 				}else if(e.keyCode==70){                  //F键
 					if(flag2==true)
 						return;
 					flag2=true;
-					var y=parseInt(tra2Notes[0].ele.style.top)
-					if(y>=630&&y<=720){
-						if(y>=670&&y<680)                     //max+
+					var y=parseInt(tra2Notes[0].ele.style.bottom)
+					if(y<=sp.y4&&y>=sp.v4){
+						if(tra2Notes[0].islNote==true){                         //长音符情况
+							lFlag2=true;
+							scoreBox.maxPlus+=1;
+							combo+=1;
+							return;
+						}
+						if(y<=sp.y1&&y>sp.v1)                     //max+
 						{
 							scoreBox.maxPlus+=1;
-							tra2Notes[0].ele.remove();
-							tra2Notes.shift();
-						}else if(y>=660&&y<=670||y>680&&y<690){  //max
+							tra2Notes[0].ele.remove();          //从网页上移除音符元素
+							tra2Notes.shift();                  //从数组中移除音符对象
+						}else if(y<=sp.y2&&y>=sp.y1||y<sp.v1&&y>sp.v2){  //max
 							scoreBox.max+=1;
 							tra2Notes[0].ele.remove();
 							tra2Notes.shift();
-						}else if(y>640&&y<=660||y>690&&y<=710){  //just
+						}else if(y<sp.y3&&y>=sp.y2||y<sp.v2&&y>=sp.v3){  //just
 							scoreBox.just+=1;
 							tra2Notes[0].ele.remove();
 							tra2Notes.shift();
-						}else if(y>630&&y<=640||y>710&&y<=720){  //good
+						}else if(y<sp.y4&&y>=sp.y3||y<sp.v3&&y>=sp.v4){  //good
 							scoreBox.good+=1;
 							tra2Notes[0].ele.remove();
 							tra2Notes.shift();
 						}
+						combo+=1;
 					}
 				}else if(e.keyCode==74){                  //J键
 					if(flag3==true)
 						return;
 					flag3=true;
-					var y=parseInt(tra3Notes[0].ele.style.top)
-					if(y>=630&&y<=720){
-						if(y>=670&&y<680)                     //max+
+					var y=parseInt(tra3Notes[0].ele.style.bottom)
+					if(y<=sp.y4&&y>=sp.v4){
+						if(tra3Notes[0].islNote==true){                         //长音符情况
+							lFlag3=true;
+							scoreBox.maxPlus+=1;
+							combo+=1;
+							return;
+						}
+						if(y<=sp.y1&&y>sp.v1)                     //max+
 						{
 							scoreBox.maxPlus+=1;
 							tra3Notes[0].ele.remove();
 							tra3Notes.shift();
-						}else if(y>=660&&y<=670||y>680&&y<690){  //max
+						}else if(y<=sp.y2&&y>=sp.y1||y<sp.v1&&y>sp.v2){  //max
 							scoreBox.max+=1;
 							tra3Notes[0].ele.remove();
 							tra3Notes.shift();
-						}else if(y>640&&y<=660||y>690&&y<=710){  //just
+						}else if(y<sp.y3&&y>=sp.y2||y<sp.v2&&y>=sp.v3){  //just
 							scoreBox.just+=1;
 							tra3Notes[0].ele.remove();
 							tra3Notes.shift();
-						}else if(y>630&&y<=640||y>710&&y<=720){  //good
+						}else if(y<sp.y4&&y>=sp.y3||y<sp.v3&&y>=sp.v4){  //good
 							scoreBox.good+=1;
 							tra3Notes[0].ele.remove();
 							tra3Notes.shift();
 						}
+						combo+=1;
 					}
 				}else if(e.keyCode==75){                  //K键
 					if(flag4==true)
 						return;
 					flag4=true;
-					var y=parseInt(tra4Notes[0].ele.style.top)
-					if(y>=630&&y<=720){
-						if(y>=670&&y<680)                     //max+
+					var y=parseInt(tra4Notes[0].ele.style.bottom)
+					if(y<=sp.y4&&y>=sp.v4){
+						if(tra4Notes[0].islNote==true){                         //长音符情况
+							lFlag4=true;
+							scoreBox.maxPlus+=1;
+							combo+=1;
+							return;
+						}
+						if(y<=sp.y1&&y>sp.v1)                     //max+
 						{
 							scoreBox.maxPlus+=1;
 							tra4Notes[0].ele.remove();
 							tra4Notes.shift();
-						}else if(y>=660&&y<=670||y>680&&y<690){  //max
+						}else if(y<=sp.y2&&y>=sp.y1||y<sp.v1&&y>sp.v2){  //max
 							scoreBox.max+=1;
 							tra4Notes[0].ele.remove();
 							tra4Notes.shift();
-						}else if(y>640&&y<=660||y>690&&y<=710){  //just
+						}else if(y<sp.y3&&y>=sp.y2||y<sp.v2&&y>=sp.v3){  //just
 							scoreBox.just+=1;
 							tra4Notes[0].ele.remove();
 							tra4Notes.shift();
-						}else if(y>630&&y<=640||y>710&&y<=720){  //good
+						}else if(y<sp.y4&&y>=sp.y3||y<sp.v3&&y>=sp.v4){  //good
 							scoreBox.good+=1;
 							tra4Notes[0].ele.remove();
 							tra4Notes.shift();
 						}
+						combo+=1;
 					}
 				}
 			}
 			document.onkeyup = function(event){
 				var e = event || window.event;
+				var n;   //长音符连击次数
+				function math1(n){
+					if(n>=0){
+						return n;
+					}
+					else
+					{
+						return 0;
+					}
+				}
 				if(e.keyCode==68){
 					flag1=false;
+					if(lFlag1==true){
+						lFlag1=false;
+						n=math1(Math.round(-45-parseInt(tra1Notes[0].ele.style.bottom)*bpm/7500/speed));
+						//alert(tra1Notes[0].ele.style.bottom);//fortest
+						scoreBox.maxPlus+=n;
+						combo+=n;
+						tra1Notes.shift().ele.remove();
+					}
+
+						
 				}else if(e.keyCode==70){
 					flag2=false;
 				}else if(e.keyCode==74){
@@ -251,51 +362,65 @@
 			}
 		}
 
-		function move(){                                       //移动函数，负责移动和删除
+		function move(){                                       //移动函数，负责移动和删除         
 			 function modifyY(){
 				var timer = new Date();	
 				for(var s in tra1Notes){									//track1
-					var y=(timer.getTime()-tra1Notes[s].startTime)*0.3;
-					if(y<790)
-						tra1Notes[s].ele.style.top=y+"px";
+					var y=720-(timer.getTime()-tra1Notes[s].startTime)*speed;
+					var amendment = 0;
+					amendment=parseInt(tra1Notes[s].ele.style.height)-40;
+					if(y>=sp.v4-amendment){
+						
+						tra1Notes[s].ele.style.bottom=y+"px";
+					}
 					else{
 						tra1Notes[s].ele.remove();
 						tra1Notes.shift();
 						miss();
+						lFlag1=false;
 
 						//这里要执行一个操作，让连击数（combo）等于0
 					}
 				}
 				for(var s in tra2Notes){									//track2
-					var y=(timer.getTime()-tra2Notes[s].startTime)*0.3;
-					if(y<790)
-						tra2Notes[s].ele.style.top=y+"px";
+					var y=720-(timer.getTime()-tra2Notes[s].startTime)*speed;
+					var amendment = 0;
+					amendment=parseInt(tra2Notes[s].ele.style.height)-40;
+					if(y>=sp.v4-amendment)
+						tra2Notes[s].ele.style.bottom=y+"px";
 					else{
 						tra2Notes[s].ele.remove();
 						tra2Notes.shift();
 						miss();
+						lFlag2=false;
 						//这里要执行一个操作，让连击数（combo）等于0
 					}
 				}
 				for(var s in tra3Notes){									//track3
-					var y=(timer.getTime()-tra3Notes[s].startTime)*0.3;
-					if(y<790)
-						tra3Notes[s].ele.style.top=y+"px";
+					var y=720-(timer.getTime()-tra3Notes[s].startTime)*speed;
+					var amendment = 0;
+				 	amendment=parseInt(tra3Notes[s].ele.style.height)-40;
+					if(y>=sp.v4-amendment)
+						tra3Notes[s].ele.style.bottom=y+"px";
 					else{
 						tra3Notes[s].ele.remove();
 						tra3Notes.shift();
 						miss();
+						lFlag3=false;
 						//这里要执行一个操作，让连击数（combo）等于0
 					}
 				}
 				for(var s in tra4Notes){									//track4
-					var y=(timer.getTime()-tra4Notes[s].startTime)*0.3;
-					if(y<790)
-						tra4Notes[s].ele.style.top=y+"px";
-					else{
+					var y=720-(timer.getTime()-tra4Notes[s].startTime)*speed;
+					var amendment = 0;
+				 	amendment=parseInt(tra4Notes[s].ele.style.height)-40;
+					if(y>=sp.v4-amendment)                                             //移动
+						tra4Notes[s].ele.style.bottom=y+"px";
+					else{                                                   //删除没被击中的音符并执行miss函数
 						tra4Notes[s].ele.remove();
 						tra4Notes.shift();
 						miss();
+						lFlag4=false;
 						//这里要执行一个操作，让连击数（combo）等于0
 					}
 				}
@@ -308,16 +433,13 @@
 
 
 
-		//---------------------------------------游戏启动代码--------------------------------------
-		/*window.onload = function gameStart(){
 
-		}*/
 
 		//--------------------------以下是testbox的代码，用于开发测试-------------------------------
 
 		
 
-		function makeaNoteToTrack1(){
+		function makeaNoteToTrack1(){                                       //以下四个函数负责把短音符放到轨道上
 			var newNote = Note.createNew();
             document.getElementById("track1").appendChild(newNote.ele);
             tra1Notes.push(newNote);
@@ -345,7 +467,60 @@
             //alert(newNote.startTime);
 		}
 
+		//长音符的长度=（60/bpm/8*t*speed）*1000  （单位为px）
+			var input;
 
+		function makeaLongNoteToTrack1(t){              //t在这里指的是长音符对应的三十二分音符的数量
+			var newlNote = longNote.createNew((60/bpm/8*t*speed)*1000);
+			$("track1").appendChild(newlNote.ele);
+			tra1Notes.push(newlNote);
+			//tra3Notes
+		}
+
+		function generateLong1(){                         //测试用函数
+			var t = parseInt($("inputLength").value);
+			makeaLongNoteToTrack1(t);
+		}
+
+		//---------------------------------------游戏启动代码--------------------------------------
+		window.onload = function gameStart(){
+			move();
+			beatStart();
+			var worker = new Worker('MusicReader.js');
+			worker.onmessage=function(event){
+				var newData = event.data;
+				if(newData.track1==0){
+					makeaNoteToTrack1();
+				}else if(newData.track1>0)
+				{
+					makeaLongNoteToTrack1(t);
+				}
+
+				if(newData.track2==0){
+					makeaNoteToTrack2();
+				}else if(newData.track2>0)
+				{
+					makeaLongNoteToTrack2(t);
+				}
+
+				if(newData.track3==0){
+					makeaNoteToTrack3();
+				}else if(newData.track3>0)
+				{
+					makeaLongNoteToTrack3(t);
+				}
+
+				if(newData.track4==0){
+					makeaNoteToTrack4();
+				}else if(newData.track4>0)
+				{
+					makeaLongNoteToTrack4(t);
+				}
+			};
+		}
+
+		if(typeof(Worker)=="undefined")
+			alert("test");
 
 	</script>
 	<!--link rel="stylesheet" type="text/css" href="*.css"-->
@@ -374,8 +549,8 @@
 		<div id="miss">miss</div>
 		<div id="combo">combo</div>
 	</div>
-
-	<div id="testbox">
+	<audio src="src.mp3" autoplay="autoplay" controls="controls"></audio>
+	<div id="testBox">                                            <!--textBox里面都是测试用的页面元素，开发完成后删掉-->
 		<input type="button" value="generateNote1" onclick="makeaNoteToTrack1()">
 		<input type="button" value="generateNote2" onclick="makeaNoteToTrack2()">
 		<input type="button" value="generateNote3" onclick="makeaNoteToTrack3()">
@@ -388,6 +563,8 @@
 		<p id="tgood"></p>
 		<p id="tmiss"></p>
 		<p id="tcombo"></p>
+		<input type="button" value="generateaLongNote1" onclick="generateLong1()">
+		<input id="inputLength" type="text" >
 	</div>
 	<script>
 		function testStatistics(){
@@ -399,6 +576,7 @@
 			$("tcombo").innerHTML="combo:"+combo;
 		}
 		setInterval(testStatistics,1000);
+		
 	</script>
 </body>
 </html>
