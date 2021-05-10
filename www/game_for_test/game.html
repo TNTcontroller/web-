@@ -567,7 +567,7 @@
 		<div id="miss">miss</div>
 		<div id="combo">combo</div>
 	</div>
-	<!--audio src="src.mp3" autoplay="autoplay" controls="controls"></audio-->
+	<audio src="鋼琴伴奏學習.mp3" autoplay="autoplay" controls="controls"></audio>
 	<div id="testBox">                                            <!--textBox里面都是测试用的页面元素，开发完成后删掉-->
 		<input type="button" value="generateNote1" onclick="makeaNoteToTrack1()">
 		<input type="button" value="generateNote2" onclick="makeaNoteToTrack2()">
@@ -597,19 +597,58 @@
 
 	</div-->
 	<div id="worker" style="display:none;">
-var timer = new Date();var StartTime= timer.getTime();var p = StartTime;var score=new Object();score = [{bpm:158,speed:1},1000,{t1:0},1000,{t1:0},1000,{t1:0},1000,{t1:0},1000,{t1:0},1000,{t1:0},];for(var s in score){if(s/2!==Math.round(s/2)){p+=score[s];do{var timer = new Date();}while(timer<=p);}else{self.postMessage(score[s]);}}
-	</div>
-	<script>
-		function testStatistics(){
-			$("tmax+").innerHTML="max+:"+scoreBox.maxPlus;
-			$("tmax").innerHTML="max:"+scoreBox.max;
-			$("tjust").innerHTML="just:"+scoreBox.just;
-			$("tgood").innerHTML="good:"+scoreBox.good;
-			$("tmiss").innerHTML="miss:"+scoreBox.miss;
-			$("tcombo").innerHTML="combo:"+combo;
-		}
-		setInterval(testStatistics,1000);
-		
+var timer = new Date();
+var StartTime= timer.getTime();
+var p = StartTime;               //时间戳
+var score;
+//-------------下面这个json数组就是乐谱-----------------
+score = [
+	{bpm:150,speed:1},              //乐谱开头必须要设置bpm和speed，speed不应该小于0.5
+	0,							//数字代表延迟时间（毫秒），注意数组中，奇数必为json对象，偶数必须为延迟时间（大于等于0）
+	{t1:0},                         //150 bpm 四分音符等于400毫秒
+	400,
+	{t4:0},
+	266,
+	{t3:0},
+	267,
+	{t2:0},
+	467,
+	{t4:0},
+	200,
+	{t3:0},
+	200,
+	{t2:0},
+	600,
+	{t1:0},
+	200,
+	{t2:0},
+	200,
+	{t3:0},
+	200,
+	{t4:0},
+	200,
+	{t1:0},
+	400,
+	{t4:0},
+	200,
+	{t2:0},
+	400,
+	{t4:0},
+	200,
+	{t2:0},
+
+];
+for(var s in score){
+	if(s/2!==Math.round(s/2)){
+		p+=score[s];
+		do{
+			var timer = new Date();
+
+		}while(timer<=p);
+	}else{
+		self.postMessage(score[s]);
+	}
+}
 	</script>
 </body>
 </html>
