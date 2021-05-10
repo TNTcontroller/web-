@@ -65,10 +65,11 @@
 			return document.getElementById(s);
 		}
 
-		var bpm=158;
-		var speed=0.1;       //音符移动速度单位是千像素每秒
-		var k = 10;         //判定范围与音符移动速度的比例系数
-
+		var bpm=158;         //beat per minute
+		var speed=0.5;       //音符移动速度，单位是1千像素每秒
+		var k = 2;           //判定范围与音符移动速度的比例系数
+                            //k*speed一定要大于1！！！！！！否则判定会很奇怪
+                           	//此时也就是speed大于0.5
 
 		function Sp(){
 			;
@@ -484,43 +485,60 @@
 
 		//---------------------------------------游戏启动代码--------------------------------------
 		window.onload = function gameStart(){
-			move();
-			beatStart();
-			var worker = new Worker('MusicReader.js');
-			worker.onmessage=function(event){
+			
+			if(typeof(Worker)=="undefined")
+				alert("浏览器不支持Web Worker多线程，无法运行");
+			//-------------网上抄来的----------
+				const urlObject = window.URL || window.webkitURL || window;
+				const blob = new Blob([document.getElementById("worker").textContent]);
+				const url = urlObject.createObjectURL(blob);
+				const myworker = new Worker(url);
+			//----------------------------
+			//var myworker = new Worker('MusicReader.js');
+			myworker.onmessage=function(event){
 				var newData = event.data;
-				if(newData.track1==0){
+				if(newData.t1==0){
 					makeaNoteToTrack1();
-				}else if(newData.track1>0)
+				}else if(newData.t1>0)
 				{
 					makeaLongNoteToTrack1(t);
 				}
 
-				if(newData.track2==0){
+				if(newData.t2==0){
 					makeaNoteToTrack2();
-				}else if(newData.track2>0)
+				}else if(newData.t2>0)
 				{
 					makeaLongNoteToTrack2(t);
 				}
 
-				if(newData.track3==0){
+				if(newData.t3==0){
 					makeaNoteToTrack3();
-				}else if(newData.track3>0)
+				}else if(newData.t3>0)
 				{
 					makeaLongNoteToTrack3(t);
 				}
 
-				if(newData.track4==0){
+				if(newData.t4==0){
 					makeaNoteToTrack4();
-				}else if(newData.track4>0)
+				}else if(newData.t4>0)
 				{
 					makeaLongNoteToTrack4(t);
 				}
+
+				if(newData.bpm>0){
+					bpm=newData.bpm;
+				}
+
+				if(newData.speed>0){
+					speed=newData.speed;
+					sp.refresh();        //由于速度变化，刷新一下判定范围
+				}
 			};
+			move();
+			beatStart();
 		}
 
-		if(typeof(Worker)=="undefined")
-			alert("test");
+		
 
 	</script>
 	<!--link rel="stylesheet" type="text/css" href="*.css"-->
@@ -549,7 +567,7 @@
 		<div id="miss">miss</div>
 		<div id="combo">combo</div>
 	</div>
-	<audio src="src.mp3" autoplay="autoplay" controls="controls"></audio>
+	<!--audio src="src.mp3" autoplay="autoplay" controls="controls"></audio-->
 	<div id="testBox">                                            <!--textBox里面都是测试用的页面元素，开发完成后删掉-->
 		<input type="button" value="generateNote1" onclick="makeaNoteToTrack1()">
 		<input type="button" value="generateNote2" onclick="makeaNoteToTrack2()">
@@ -565,6 +583,21 @@
 		<p id="tcombo"></p>
 		<input type="button" value="generateaLongNote1" onclick="generateLong1()">
 		<input id="inputLength" type="text" >
+	</div>
+	<!--div id="worker">
+		var testdata={
+			t1:0,
+			t2:0,
+			t3:0,
+			t4:0,
+		};
+		setInterval(function(){
+			self.postMessage(testdata);
+		},700);
+
+	</div-->
+	<div id="worker" style="display:none;">
+var timer = new Date();var StartTime= timer.getTime();var p = StartTime;var score=new Object();score = [{bpm:158,speed:1},1000,{t1:0},1000,{t1:0},1000,{t1:0},1000,{t1:0},1000,{t1:0},1000,{t1:0},];for(var s in score){if(s/2!==Math.round(s/2)){p+=score[s];do{var timer = new Date();}while(timer<=p);}else{self.postMessage(score[s]);}}
 	</div>
 	<script>
 		function testStatistics(){
