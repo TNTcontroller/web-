@@ -4,8 +4,14 @@
 	<meta charset="UTF-8">
 	<title>平面国音游</title>
 	<style>
+		@font-face{
+			font-family: PxFont;
+			src: url('ARCADE.TTF');
+		}
 		*{
 			background-color: #808080;
+			font-family: PxFont;
+			font-size:30px;
 		}
 		body{
 			height:2000px;
@@ -13,23 +19,24 @@
 		#content{
 			/*background-color: #C0C0C0;*/
 			width:1280px;
-			height:720px;
+			height:730px;
 			border:solid 1px;
 			position:fixed;
 			top:0px;
 			left:50%;
 			margin-left:-640px;
-
+			
 		}
 		.track{
 			position:absolute;
 			width:150px;
 			height:670px;
-			border-left:solid 1px;
+			/*border-left:solid 1px;*/
+			top:10px;
 		}
 		#track1{
 			left:340px;
-
+			border-left:solid 1px;
 		}
 		#track2{
 			left:490px;
@@ -43,7 +50,7 @@
 		}
 		.span{
 			position:absolute;
-			top:670px;
+			top:680px;
 			width:150px;
 			height:50px;
 			border-left:solid 1px;
@@ -65,13 +72,67 @@
 			border-right:solid 1px;
 
 		}
-
-		#testbox{
-			width:1000px;
-			height:200px;
+		#progressBar{
+			width:0px;
+			height:9px;
+			background-color:yellow;
+			z-index: 3;
+		}
+		#testBox{
 			border:solid 1px;
+			width:1000px;
+			height:400px;
 			position:absolute;
-			top:0px;
+			top:70%;
+			left:50%;
+			margin-left:-500px;
+		}
+		#startMenu{
+			display: block;
+			font-size:50px;
+			position:fixed;
+			width:350px;
+			height:300px;
+			left:50%;
+			top:30%;
+			margin-left:-175px;
+			border:solid 1px;
+			z-index: 1000;
+		}
+		#startTheGame{
+			width:120px;height:60px;position:absolute;top:20px;left:110px;font-size:50px;
+		}
+		#breakMenu{
+			display:none;
+			font-size:50px;
+			position:fixed;
+			width:350px;
+			height:300px;
+			left:50%;
+			top:30%;
+			margin-left:-175px;
+			border:solid 1px;
+			z-index: 1000;
+		}
+		#goToTheMainMenu{
+			width:120px;
+			height:60px;
+			position:absolute;
+			top:20px;
+			left:110px;
+			font-size:50px;
+		}
+		#finishMenu{
+			display:none;
+			font-size:50px;
+			position:fixed;
+			width:350px;
+			height:300px;
+			left:50%;
+			top:30%;
+			margin-left:-175px;
+			border:solid 1px;
+			z-index: 1000;
 		}
 	</style>
 	<script>
@@ -80,7 +141,13 @@
 		function $(s){                       //经常用到这个函数，做一个伪宏定义
 			return document.getElementById(s);
 		}
+		var mp3;
+		var gamePause=false;
+		var delay=0;
+		var remoteControl={
 
+		}
+		var duration=5300;           //总时长，单位为毫秒
 		var bpm=158;         //beat per minute
 		var speed=0.5;       //音符移动速度，单位是1千像素每秒
 		var k = 2.5;           //判定范围与音符移动速度的比例系数
@@ -116,18 +183,36 @@
 		var tra3Notes = new Array();
 		var tra4Notes = new Array();
 
-		var life=100;
+		
 		var loselife=1      //在创建不同乐谱时，loselife的值应当可以自定义
 		var combo=0;
 
-		var scoreBox={       //定义一个分数对象
-			score:0,
+		var scoreBox={       //定义一个分数对象,
+			life:100,
+			score:0,            
 			maxCombo:0,
-			maxPlus:0,
-			max:0,
-			just:0,
-			good:0,
-			miss:0,
+			maxPlus:0,          //100
+			max:0,				//90
+			just:0,				//60
+			good:0,				//50
+			miss:0,				//0
+			refreshMaxCombo:function(){
+				if(combo>scoreBox.maxCombo)
+					scoreBox.maxCombo=combo;
+			},
+			calculateScore:function(){
+				scoreBox.score=100*scoreBox.maxPlus+90*scoreBox.max+60*scoreBox.just+50*scoreBox.good;
+			},
+			refreshAllRecord:function(){
+				scoreBox.life=100;
+				scoreBox.score=0;
+				scoreBox.maxCombo=0;
+				scoreBox.maxPlus=0;
+				scoreBox.max=0;
+				scoreBox.just=0;
+				scoreBox.good=0;
+				scoreBox.miss=0;
+			}
 		};
 
 		var noteAttr = new Object;    //短音符属性盒子
@@ -138,7 +223,7 @@
                         position: "absolute",
                         bottom     : "720px",
                         left    : "25px",
-                        zIndex  : 1000 ,
+                        zIndex  : 2 ,
 
             };
 
@@ -165,11 +250,11 @@
 						position: "absolute",
 						bottom     : "720px",
 						left    : "25px", 
-
+						zIndex  : 2 ,
 		};
 
 		var longNote={                      //创建模拟类：长音符,
-			createNew:function(length){
+			createNew:function(length,t){
 				var lnote={};                         //有两个实例字段，startTime和ele
 				var d = new Date ;
 				lnote.startTime = d.getTime();
@@ -180,24 +265,61 @@
 				a.style.height = length+"px";
 				lnote.ele=a;
 				lnote.islNote=true;
+				lnote.noteQuant=parseInt(t/2);       //避免分数膨胀，把音符连击数除以2
 				return lnote;
 			},
 		}
 
 		function miss(){
-			life=life-loselife;
-			if(life<=0)
+			scoreBox.life=scoreBox.life-loselife;
+			if(scoreBox.life<=0)
 			{
-				life=0;
-				$("lifeNumber").innerHTML=life+"";
+				scoreBox.life=0;
+				$("lifeNumber").innerHTML=scoreBox.life+"";
 
 				//youFail();    定义一个函数让游戏结束
 			}
-			$("lifeNumber").innerHTML=life+"";
+			$("lifeNumber").innerHTML=scoreBox.life+"";
 
 			scoreBox.miss+=1;
 			combo=0;
 		}
+
+		function LifeOrNot(){                               //生命对象
+			this.youFail=function(){               //失败函数
+				mp3.pause();
+			};
+			this.pauseStart=function(){                    //暂停函数
+				if(gamePause==false){
+					$("breakMenu").style.display="inline";     //显示暂停菜单
+					progr.pause();                            //停止进度条
+					gamePause=true;                           
+					clearInterval(remoteControl.moveContr);  //停止移动
+					remoteControl.myworker.postMessage("pause");            //发送消息给worker停止读取乐谱
+				}else{
+					$("breakMenu").style.display="none";	 //隐藏暂停菜单
+					progr.progressing();                   	 //进度条继续走
+					gamePause=false;
+					remoteControl.myworker.postMessage("start");           //发送消息给worker继续读取乐谱
+				}
+			}
+			this.end=function(){
+				document.onkeydown=null;
+				document.onkeyup=null;
+				//clearInterval(remoteControl.moveContr);
+				progr.pause();
+				progr.restart();
+				scoreBox.calculateScore();
+				$("finishMenu").style.display="block";
+				$("finalScore").innerHTML=scoreBox.score+"";
+				scoreBox.refreshAllRecord();
+				mp3.pause();
+				mp3.currentTime=0;
+			};
+		}
+		var liv = new LifeOrNot;
+
+		
 
 
 		var lFlag1 = false;                           //lFlag表示长音符是否被击中
@@ -236,23 +358,17 @@
 						if(y<=sp.y1&&y>sp.v1)                     //max+ 判定范围正负5的倍数
 						{
 							scoreBox.maxPlus+=1;
-							tra1Notes[0].ele.remove();
-							tra1Notes.shift();
-
 						}else if(y<=sp.y2&&y>=sp.y1||y<sp.v1&&y>=sp.v2){  //max         范围正负15到5的倍数 
 							scoreBox.max+=1;
-							tra1Notes[0].ele.remove();
-							tra1Notes.shift();
 						}else if(y<sp.y3&&y>=sp.y2||y<sp.v2&&y>=sp.v3){  //just
 							scoreBox.just+=1;
-							tra1Notes[0].ele.remove();
-							tra1Notes.shift();
 						}else if(y<sp.y4&&y>=sp.y3||y<sp.v3&&y>=sp.v4){  //good
 							scoreBox.good+=1;
-							tra1Notes[0].ele.remove();
-							tra1Notes.shift();
 						}
+						tra1Notes[0].ele.remove();
+						tra1Notes.shift();
 						combo+=1;
+						scoreBox.refreshMaxCombo();
 					}
 				}else if(e.keyCode==70){                  //F键
 					if(flag2==true)
@@ -270,22 +386,17 @@
 						if(y<=sp.y1&&y>sp.v1)                     //max+
 						{
 							scoreBox.maxPlus+=1;
-							tra2Notes[0].ele.remove();          //从网页上移除音符元素
-							tra2Notes.shift();                  //从数组中移除音符对象
 						}else if(y<=sp.y2&&y>=sp.y1||y<sp.v1&&y>sp.v2){  //max
 							scoreBox.max+=1;
-							tra2Notes[0].ele.remove();
-							tra2Notes.shift();
 						}else if(y<sp.y3&&y>=sp.y2||y<sp.v2&&y>=sp.v3){  //just
 							scoreBox.just+=1;
-							tra2Notes[0].ele.remove();
-							tra2Notes.shift();
 						}else if(y<sp.y4&&y>=sp.y3||y<sp.v3&&y>=sp.v4){  //good
 							scoreBox.good+=1;
-							tra2Notes[0].ele.remove();
-							tra2Notes.shift();
 						}
+						tra2Notes[0].ele.remove();          //从网页上移除音符元素
+						tra2Notes.shift();                  //从数组中移除音符对象
 						combo+=1;
+						scoreBox.refreshMaxCombo();
 					}
 				}else if(e.keyCode==74){                  //J键
 					if(flag3==true)
@@ -303,22 +414,18 @@
 						if(y<=sp.y1&&y>sp.v1)                     //max+
 						{
 							scoreBox.maxPlus+=1;
-							tra3Notes[0].ele.remove();
-							tra3Notes.shift();
+							
 						}else if(y<=sp.y2&&y>=sp.y1||y<sp.v1&&y>sp.v2){  //max
 							scoreBox.max+=1;
-							tra3Notes[0].ele.remove();
-							tra3Notes.shift();
 						}else if(y<sp.y3&&y>=sp.y2||y<sp.v2&&y>=sp.v3){  //just
 							scoreBox.just+=1;
-							tra3Notes[0].ele.remove();
-							tra3Notes.shift();
 						}else if(y<sp.y4&&y>=sp.y3||y<sp.v3&&y>=sp.v4){  //good
 							scoreBox.good+=1;
-							tra3Notes[0].ele.remove();
-							tra3Notes.shift();
 						}
+						tra3Notes[0].ele.remove();
+						tra3Notes.shift();
 						combo+=1;
+						scoreBox.refreshMaxCombo();
 					}
 				}else if(e.keyCode==75){                  //K键
 					if(flag4==true)
@@ -336,46 +443,44 @@
 						if(y<=sp.y1&&y>sp.v1)                     //max+
 						{
 							scoreBox.maxPlus+=1;
-							tra4Notes[0].ele.remove();
-							tra4Notes.shift();
 						}else if(y<=sp.y2&&y>=sp.y1||y<sp.v1&&y>sp.v2){  //max
 							scoreBox.max+=1;
-							tra4Notes[0].ele.remove();
-							tra4Notes.shift();
 						}else if(y<sp.y3&&y>=sp.y2||y<sp.v2&&y>=sp.v3){  //just
 							scoreBox.just+=1;
-							tra4Notes[0].ele.remove();
-							tra4Notes.shift();
 						}else if(y<sp.y4&&y>=sp.y3||y<sp.v3&&y>=sp.v4){  //good
 							scoreBox.good+=1;
-							tra4Notes[0].ele.remove();
-							tra4Notes.shift();
 						}
+						tra4Notes[0].ele.remove();
+						tra4Notes.shift();
 						combo+=1;
+						scoreBox.refreshMaxCombo();
 					}
+				}else if(e.keyCode==27){                  //ESC键
+					liv.pauseStart();
 				}
-			}
+			} 
 			document.onkeyup = function(event){
 				var e = event || window.event;
 				var n;   //长音符连击次数
-				function math1(n){
-					if(n>=0){
-						return n;
-					}
-					else
-					{
-						return 0;
-					}
-				}
 				if(e.keyCode==68){
 					changeColor(1,"#808080");
 					flag1=false;
 					if(lFlag1==true){
 						lFlag1=false;
-						n=math1(Math.round(-45-parseInt(tra1Notes[0].ele.style.bottom)*bpm/7500/speed));
-						//alert(tra1Notes[0].ele.style.bottom);//fortest
-						scoreBox.maxPlus+=n;
-						combo+=n;
+
+						// n=math1(Math.round(-45-parseInt(tra1Notes[0].ele.style.bottom)*bpm/7500/speed));
+						// //alert(tra1Notes[0].ele.style.bottom);//fortest
+						// scoreBox.maxPlus+=n;
+						// combo+=n;
+						// tra1Notes.shift().ele.remove();
+						var temp=parseInt(tra1Notes[0].ele.style.bottom)-40+parseInt(tra1Notes[0].ele.style.height);
+						if(temp>sp.v4&&temp<sp.y4){
+							scoreBox.maxPlus+=tra1Notes[0].noteQuant;
+							combo+=tra1Notes[0].noteQuant;
+							scoreBox.refreshMaxCombo();
+						}else{
+							miss();
+						}
 						tra1Notes.shift().ele.remove();
 					}
 
@@ -383,21 +488,57 @@
 				}else if(e.keyCode==70){
 					changeColor(2,"#808080");
 					flag2=false;
+					if(lFlag2==true){
+						lFlag2=false;
+						var temp=parseInt(tra2Notes[0].ele.style.bottom)-40+parseInt(tra2Notes[0].ele.style.height);
+						if(temp>sp.v4&&temp<sp.y4){
+							scoreBox.maxPlus+=tra2Notes[0].noteQuant;
+							combo+=tra2Notes[0].noteQuant;
+							scoreBox.refreshMaxCombo();
+						}else{
+							miss();
+						}
+						tra2Notes.shift().ele.remove();
+					}
 				}else if(e.keyCode==74){
 					changeColor(3,"#808080");
 					flag3=false;
+					if(lFlag3==true){
+						lFlag3=false;
+						var temp=parseInt(tra3Notes[0].ele.style.bottom)-40+parseInt(tra3Notes[0].ele.style.height);
+						if(temp>sp.v4&&temp<sp.y4){
+							scoreBox.maxPlus+=tra3Notes[0].noteQuant;
+							combo+=tra3Notes[0].noteQuant;
+							scoreBox.refreshMaxCombo();
+						}else{
+							miss();
+						}
+						tra3Notes.shift().ele.remove();
+					}
 				}else if(e.keyCode==75){
 					changeColor(4,"#808080");
 					flag4=false;
+					if(lFlag4==true){
+						lFlag4=false;
+						var temp=parseInt(tra4Notes[0].ele.style.bottom)-40+parseInt(tra4Notes[0].ele.style.height);
+						if(temp>sp.v4&&temp<sp.y4){
+							scoreBox.maxPlus+=tra4Notes[0].noteQuant;
+							combo+=tra4Notes[0].noteQuant;
+							scoreBox.refreshMaxCombo();
+						}else{
+							miss();
+						}
+						tra4Notes.shift().ele.remove();
+					}
 				}
 			}
-		}
+		}	
 
 		function move(){                                       //移动函数，负责移动和删除         
 			 function modifyY(){
 				var timer = new Date();	
 				for(var s in tra1Notes){									//track1
-					var y=720-(timer.getTime()-tra1Notes[s].startTime)*speed;
+					var y=720-(timer.getTime()-delay-tra1Notes[s].startTime)*speed;
 					var amendment = 0;
 					amendment=parseInt(tra1Notes[s].ele.style.height)-40;
 					if(y>=sp.v4-amendment){
@@ -414,7 +555,7 @@
 					}
 				}
 				for(var s in tra2Notes){									//track2
-					var y=720-(timer.getTime()-tra2Notes[s].startTime)*speed;
+					var y=720-(timer.getTime()-delay-tra2Notes[s].startTime)*speed;
 					var amendment = 0;
 					amendment=parseInt(tra2Notes[s].ele.style.height)-40;
 					if(y>=sp.v4-amendment)
@@ -428,7 +569,7 @@
 					}
 				}
 				for(var s in tra3Notes){									//track3
-					var y=720-(timer.getTime()-tra3Notes[s].startTime)*speed;
+					var y=720-(timer.getTime()-delay-tra3Notes[s].startTime)*speed;
 					var amendment = 0;
 				 	amendment=parseInt(tra3Notes[s].ele.style.height)-40;
 					if(y>=sp.v4-amendment)
@@ -442,7 +583,7 @@
 					}
 				}
 				for(var s in tra4Notes){									//track4
-					var y=720-(timer.getTime()-tra4Notes[s].startTime)*speed;
+					var y=720-(timer.getTime()-delay-tra4Notes[s].startTime)*speed;
 					var amendment = 0;
 				 	amendment=parseInt(tra4Notes[s].ele.style.height)-40;
 					if(y>=sp.v4-amendment)                                             //移动
@@ -459,11 +600,37 @@
 					alert(timer.getTime()-tra1Notes[s].startTime);
 				}测试时间获取正常与否的语句*/
 			}
-			setInterval(modifyY,16);
+			remoteControl.moveContr=setInterval(modifyY,16);
 		}
 
 
+		function progressBar(){
+			var contr;              //控制暂停,false代表暂停
+			//this.progress=0;   //进度条从0%到100%
+			
+			this.progressing=function(){
+				clearInterval(contr);
+				contr=setInterval(function(){
+					var width=$("progressBar").style.width;
+					//alert(width); //fortest
+					if(parseFloat(width)<1280){
+						$("progressBar").style.width=(parseFloat(width)+12.8)+"px";
+					}
+				},parseInt(duration/100));
+			}
+			this.pause=function(){
+				clearInterval(contr);
+			};
+			this.restart=function(){
+				$("progressBar").style.width="0px";
+			};
+		}
+		var progr= new progressBar;
 
+		function gamePrepare(){
+			mp3 = new Audio("src.mp3")
+			move();
+		}
 
 
 		//--------------------------以下是testbox的代码，用于开发测试-------------------------------
@@ -507,34 +674,64 @@
 			//tra3Notes
 		}*/
 
-		function makeaLongNoteToTrack1(t){              //t在这里指的是音符毫秒数
-			var newlNote = longNote.createNew((60/bpm/8*t*speed)*1000);
+		function makeaLongNoteToTrack1(t){              //t在这里指的是音符连击数
+			var newlNote = longNote.createNew((60*1000*t*speed/bpm/8),t);
 			$("track1").appendChild(newlNote.ele);
 			tra1Notes.push(newlNote);
+			//tra1Notes
+		}
+		function makeaLongNoteToTrack2(t){              //t在这里指的是音符连击数
+			var newlNote = longNote.createNew((60*1000*t*speed/bpm/8),t);
+			$("track2").appendChild(newlNote.ele);
+			tra2Notes.push(newlNote);
+			//tra2Notes
+		}
+		function makeaLongNoteToTrack3(t){              //t在这里指的是音符连击数
+			var newlNote = longNote.createNew((60*1000*t*speed/bpm/8),t);
+			$("track3").appendChild(newlNote.ele);
+			tra3Notes.push(newlNote);
 			//tra3Notes
 		}
+		function makeaLongNoteToTrack4(t){              //t在这里指的是音符连击数
+			var newlNote = longNote.createNew((60*1000*t*speed/bpm/8),t);
+			$("track4").appendChild(newlNote.ele);
+			tra4Notes.push(newlNote);
+			//tra4Notes
+		}
 
-		function generateLong1(){                         //测试用函数
+		function generateLong1(){                         //测试用函数-----
 			var t = parseInt($("inputLength").value);
 			makeaLongNoteToTrack1(t);
 		}
 
 		//---------------------------------------游戏启动代码--------------------------------------
-		window.onload = function gameStart(){
-			move();
+		window.onload = gamePrepare;
+
+		function gameStart(){
+			$("startMenu").style.display="none";
+			$("finishMenu").style.display="none";
+			$("breakMenu").style.display="none";
+			$("failMenu").style.display="none";
 			beatStart();
-			window.focus();
+			//mp3.play();
 			if(typeof(Worker)=="undefined")
 				alert("浏览器不支持Web Worker多线程，无法运行");
-			//-------------网上抄来的----------
+			//-------------网上抄来的webworker放在同一页面的技巧----------
 				const urlObject = window.URL || window.webkitURL || window;
 				const blob = new Blob([document.getElementById("worker").textContent]);
 				const url = urlObject.createObjectURL(blob);
 				const myworker = new Worker(url);
+				remoteControl.myworker=myworker;
 			//----------------------------
 			//var myworker = new Worker('MusicReader.js');
+			
+			var startFlag=true;
 			myworker.onmessage=function(event){
 				var newData = event.data;
+				if(startFlag==true){
+					startFlag=false;
+					duration=newData.duration;
+				}
 				if(newData.t1==0){
 					makeaNoteToTrack1();
 				}else if(newData.t1>0)
@@ -546,21 +743,21 @@
 					makeaNoteToTrack2();
 				}else if(newData.t2>0)
 				{
-					makeaLongNoteToTrack2(newData.t1);
+					makeaLongNoteToTrack2(newData.t2);
 				}
 
 				if(newData.t3==0){
 					makeaNoteToTrack3();
 				}else if(newData.t3>0)
 				{
-					makeaLongNoteToTrack3(newData.t1);
+					makeaLongNoteToTrack3(newData.t3);
 				}
 
 				if(newData.t4==0){
 					makeaNoteToTrack4();
 				}else if(newData.t4>0)
 				{
-					makeaLongNoteToTrack4(newData.t1);
+					makeaLongNoteToTrack4(newData.t4);
 				}
 
 				if(newData.bpm>0){
@@ -571,7 +768,18 @@
 					speed=newData.speed;
 					sp.refresh();        //由于速度变化，刷新一下判定范围
 				}
+				if(newData.delay>0){
+					delay=newData.delay;
+					alert(delay);
+					move();
+				}
+				if(newData.end==true){
+					liv.end();
+					myworker.terminate();
+				}
 			};
+			progr.progressing();
+			setTimeout(function(){mp3.play();},720/speed-600);
 			
 		}
 
@@ -582,11 +790,11 @@
 	<!--script type="text/javascript" src=""><script-->
 </head>
 <body>
-	<div id="progressBar"></div>              <!--进度条-->
+	
 	
 	<div id="content">
+		<div id="progressBar" style="width:0px"></div>              <!--进度条-->
 		
-
 		<div id="track1" class="track"></div>
 		<div id="track2" class="track"></div>
 		<div id="track3" class="track"></div>
@@ -599,8 +807,33 @@
 		<div id="life">life:<p id="lifeNumber">100</p></div>				<!--生命值-->
 		<div id="combo">combo</div>
 	</div>
-	<audio src="鋼琴伴奏學習.mp3" autoplay="autoplay" controls="controls" style="top:1000px;"></audio>
-	<div id="testBox">                                            <!--textBox里面都是测试用的页面元素，开发完成后删掉-->
+
+
+    <!--要弹出==============↓↓↓↓↓↓↓↓↓↓↓↓↓=================的菜单-->
+	<div id="startMenu">
+		<!--要包含:开始游戏按钮、延迟修正进度条、回到主菜单页面   -->
+		<input id="startTheGame" type="button" onclick="gameStart()" value="start">	
+		<div id="amendTheDelay"></div>
+	</div>
+	<div id="breakMenu">   <!--这个菜单用来重新开始，退出到主菜单，暂停（有待商榷，）-->
+		<input id="goToTheMainMenu" type="button"  value="main menu" onclick="">
+		<input id="restart" type="button" value="restart" onclick="gameStart()">
+	</div>
+	<div  id="finishMenu">
+		score:<p id="finalScore"></p>
+		<input id="goToTheMainMenu" type="button"  value="Main menu" onclick="">
+		<input id="restart" type="button"  value="restart" onclick="gameStart()">
+	</div>
+	<div  id="failMenu">
+		
+	</div>
+	<!--要弹出===================↑↑↑↑↑↑↑↑↑↑↑↑↑==============的菜单-->
+
+	<!--audio src="src.mp3" autoplay="autoplay" controls="controls" style="top:1000px;"></audio-->
+
+
+	<!--textBox里面都是测试用的页面元素，开发完成后删掉-->
+	<div id="testBox">                                            
 		<input type="button" value="generateNote1" onclick="makeaNoteToTrack1()">
 		<input type="button" value="generateNote2" onclick="makeaNoteToTrack2()">
 		<input type="button" value="generateNote3" onclick="makeaNoteToTrack3()">
@@ -613,8 +846,12 @@
 		<p id="tgood"></p>
 		<p id="tmiss"></p>
 		<p id="tcombo"></p>
+		<p id="tmaxCombo"></p>
 		<input type="button" value="generateaLongNote1" onclick="generateLong1()">
 		<input id="inputLength" type="text" >
+		<input type="button" value="startProgressBar" onclick="progr.progressing()">
+		<input type="button" value="pauseProgressBar" onclick="progr.pause()">
+		<input type="button" value="refreshProgressBar" onclick="progr.restart()">
 	</div>
 	<script>
 		function testStatistics(){
@@ -624,8 +861,15 @@
 			$("tgood").innerHTML="good:"+scoreBox.good;
 			$("tmiss").innerHTML="miss:"+scoreBox.miss;
 			$("tcombo").innerHTML="combo:"+combo;
+			$("tmaxCombo").innerHTML="Maxcombo:"+scoreBox.maxCombo;
+			//-----以上为测试数据显示，以下为正式数据显示
+			$("lifeNumber").innerHTML=scoreBox.life+"";
+			scoreBox.calculateScore();
+			$("scoreNumber").innerHTML=scoreBox.score;
 		}
 		setInterval(testStatistics,1000);
+		//$("progressBar").style.width="0px"; //fortest
+		
 	</script>
 	<!--div id="worker">
 		var testdata={
@@ -644,49 +888,79 @@ var timer = new Date();
 var StartTime= timer.getTime();
 var p = StartTime;               //时间戳
 var score;
+var numberOfNote=0;
+var bpm=150;
+var Con = (60*1000/bpm/8);   //比例常数
+var delay=0;
+var pauseFlag=false;
+self.onmessage=function(event){
+	var newData=event.data;
+	if(event.data=="pause"){
+		pauseFlag=true;
+		var timer = new Date;
+		pausep=timer.getTime();
+	}else if(event.data=="start"){
+		var timer = new Date;
+		delay+=(timer.getTime()-pausep);
+		self.postMessage(delay);
+		pauseFlag=false;
+	}
+}
 //-------------下面这个json数组就是乐谱-----------------
 score = [
-	{bpm:150,speed:1},              //乐谱开头必须要设置bpm和speed，speed不应该小于0.5
-	0,							//数字代表延迟时间（毫秒），注意数组中，奇数必为json对象（表示该时刻要发射的音符），偶数必须为延迟时间（大于等于0）
-	{t1:0},                         //150 bpm 四分音符等于400毫秒
-	400,
+	{bpm:150,speed:1,duration:5300},              //乐谱开头必须要设置bpm和speed，speed不应该小于0.5
+	0,							//数字代表延迟时间（一个三十二分音符），注意数组中，奇数必为json对象（表示该时刻要发射的音符），偶数必须为延迟时间（大于等于0）
+	{t1:0},                         //150 bpm 四分音符等于400毫秒 ,32分音符为50毫秒 
+	8,
 	{t4:0},
-	266,
+	6,
 	{t3:0},
-	267,
+	6,
 	{t2:0},
-	467,
+	10,
 	{t4:0},
-	200,
+	4,
 	{t3:0},
-	200,
+	4,
 	{t2:0},
-	600,
+	12,
 	{t1:0,t2:0},
-	200,
+	4,
 	{t2:0,t3:0},
-	200,
+	4,
 	{t3:0},
-	200,
+	4,
 	{t4:0},
-	200,
+	4,
 	{t1:0},
-	400,
+	8,
 	{t4:0},
-	200,
+	4,
 	{t2:0},
-	400,
+	8,
 	{t4:0},
-	200,
+	4,
 	{t1:32},
+	4,
+
+	{t2:32},
+	4,
+	{t3:32},
+	4,
+	{t4:32},
+	64,         
+	{end:true}    //发送end：true之前必须预留足够的时间让最后的音符落下去
 
 ];
 for(var s in score){
 	if(s/2!==Math.round(s/2)){
-		p+=score[s];
+		numberOfNote+=score[s];
+		p=StartTime+numberOfNote*Con;
 		do{
 			var timer = new Date();
-
+			while(pauseFlag==true){
+				;
+			}
 		}while(timer<=p);
 	}else{
 		self.postMessage(score[s]);
