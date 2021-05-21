@@ -144,6 +144,7 @@
 		var mp3;
 		var gamePause=false;
 		var delay=0;
+		var startTime;
 		var remoteControl={
 
 		}
@@ -292,18 +293,21 @@
 			this.pauseStart=function(){                    //暂停函数
 				if(gamePause==false){
 					$("breakMenu").style.display="inline";     //显示暂停菜单
+					mp3.pause();
 					progr.pause();                            //停止进度条
 					gamePause=true;                           
 					clearInterval(remoteControl.moveContr);  //停止移动
 					remoteControl.myworker.postMessage("pause");            //发送消息给worker停止读取乐谱
 				}else{
 					$("breakMenu").style.display="none";	 //隐藏暂停菜单
+					mp3.play();
 					progr.progressing();                   	 //进度条继续走
 					gamePause=false;
 					remoteControl.myworker.postMessage("start");           //发送消息给worker继续读取乐谱
 				}
 			}
 			this.end=function(){
+				clearInterval(remoteControl.moveContr);
 				document.onkeydown=null;
 				document.onkeyup=null;
 				//clearInterval(remoteControl.moveContr);
@@ -315,6 +319,7 @@
 				scoreBox.refreshAllRecord();
 				mp3.pause();
 				mp3.currentTime=0;
+				refreshAllTrack();
 			};
 		}
 		var liv = new LifeOrNot;
@@ -346,7 +351,7 @@
 						return;
 					flag1=true;
 					changeColor(1,"#C0C0C0");
-					var y=parseInt(tra1Notes[0].ele.style.bottom)
+					var y=parseInt(tra1Notes[0].ele.style.bottom);
 					if(y<=sp.y4&&y>=sp.v4){										//判定横线的中点为-45
 						if(tra1Notes[0].islNote==true){                         //长音符情况
 							lFlag1=true;
@@ -456,7 +461,10 @@
 						scoreBox.refreshMaxCombo();
 					}
 				}else if(e.keyCode==27){                  //ESC键
-					liv.pauseStart();
+					var timer=new Date();
+					if(timer.getTime()-startTime>2000){
+						liv.pauseStart();
+					}
 				}
 			} 
 			document.onkeyup = function(event){
@@ -538,7 +546,7 @@
 			 function modifyY(){
 				var timer = new Date();	
 				for(var s in tra1Notes){									//track1
-					var y=720-(timer.getTime()-delay-tra1Notes[s].startTime)*speed;
+					var y=720-(timer.getTime()-tra1Notes[s].startTime)*speed;
 					var amendment = 0;
 					amendment=parseInt(tra1Notes[s].ele.style.height)-40;
 					if(y>=sp.v4-amendment){
@@ -555,7 +563,7 @@
 					}
 				}
 				for(var s in tra2Notes){									//track2
-					var y=720-(timer.getTime()-delay-tra2Notes[s].startTime)*speed;
+					var y=720-(timer.getTime()-tra2Notes[s].startTime)*speed;
 					var amendment = 0;
 					amendment=parseInt(tra2Notes[s].ele.style.height)-40;
 					if(y>=sp.v4-amendment)
@@ -569,7 +577,7 @@
 					}
 				}
 				for(var s in tra3Notes){									//track3
-					var y=720-(timer.getTime()-delay-tra3Notes[s].startTime)*speed;
+					var y=720-(timer.getTime()-tra3Notes[s].startTime)*speed;
 					var amendment = 0;
 				 	amendment=parseInt(tra3Notes[s].ele.style.height)-40;
 					if(y>=sp.v4-amendment)
@@ -583,7 +591,7 @@
 					}
 				}
 				for(var s in tra4Notes){									//track4
-					var y=720-(timer.getTime()-delay-tra4Notes[s].startTime)*speed;
+					var y=720-(timer.getTime()-tra4Notes[s].startTime)*speed;
 					var amendment = 0;
 				 	amendment=parseInt(tra4Notes[s].ele.style.height)-40;
 					if(y>=sp.v4-amendment)                                             //移动
@@ -603,6 +611,47 @@
 			remoteControl.moveContr=setInterval(modifyY,16);
 		}
 
+		function appealDelay(){
+			for(var s in tra1Notes){
+				tra1Notes[s].startTime+=delay;
+			}
+			for(var s in tra2Notes){
+				tra2Notes[s].startTime+=delay;
+			}
+			for(var s in tra3Notes){
+				tra3Notes[s].startTime+=delay;
+			}
+			for(var s in tra4Notes){
+				tra4Notes[s].startTime+=delay;
+			}
+		}
+
+		function refreshAllTrack(){             //清空轨道函数
+			for(var s in tra1Notes){
+				tra1Notes[s].ele.remove();
+			}
+			for(var s in tra2Notes){
+				tra2Notes[s].ele.remove();
+			}
+			for(var s in tra3Notes){
+				tra3Notes[s].ele.remove();
+			}
+			for(var s in tra4Notes){
+				tra4Notes[s].ele.remove();
+			}
+			while(tra1Notes[0]!==undefined){
+				tra1Notes.shift();
+			}
+			while(tra2Notes[0]!==undefined){
+				tra2Notes.shift();
+			}
+			while(tra3Notes[0]!==undefined){
+				tra3Notes.shift();
+			}
+			while(tra4Notes[0]!==undefined){
+				tra4Notes.shift();
+			}
+		}
 
 		function progressBar(){
 			var contr;              //控制暂停,false代表暂停
@@ -628,8 +677,9 @@
 		var progr= new progressBar;
 
 		function gamePrepare(){
-			mp3 = new Audio("src.mp3")
-			move();
+			mp3 = new Audio("src.mp3");
+			mp3.currentTime=0;
+			
 		}
 
 
@@ -707,12 +757,29 @@
 		//---------------------------------------游戏启动代码--------------------------------------
 		window.onload = gamePrepare;
 
+		function gameRestart(){
+			document.onkeydown=null;
+			document.onkeyup=null;
+			progr.pause();
+			progr.restart();
+			scoreBox.refreshAllRecord();
+			mp3.pause();
+			mp3.currentTime=0;
+			refreshAllTrack();
+			gamePause=false;  //内联数据重置
+			gameStart();
+		}
+
 		function gameStart(){
 			$("startMenu").style.display="none";
 			$("finishMenu").style.display="none";
 			$("breakMenu").style.display="none";
 			$("failMenu").style.display="none";
+			var timer=new Date();
+			startTime=timer.getTime();
+			delay=0;
 			beatStart();
+			move();
 			//mp3.play();
 			if(typeof(Worker)=="undefined")
 				alert("浏览器不支持Web Worker多线程，无法运行");
@@ -724,8 +791,14 @@
 				remoteControl.myworker=myworker;
 			//----------------------------
 			//var myworker = new Worker('MusicReader.js');
+			//------------------以下为错误捕捉-------------
+				// myworker.addEventListener("error", function(evt){
+				// 	alert("Line #" + evt.lineno + " - " + evt.message + " in " + evt.filename);
+				// }, false);
+				
+			//-----------------------------------------
 			
-			var startFlag=true;
+			var startFlag=true;                //确保duration的更新只执行一次
 			myworker.onmessage=function(event){
 				var newData = event.data;
 				if(startFlag==true){
@@ -768,10 +841,15 @@
 					speed=newData.speed;
 					sp.refresh();        //由于速度变化，刷新一下判定范围
 				}
-				if(newData.delay>0){
-					delay=newData.delay;
-					alert(delay);
+				if(typeof newData=="number"){     //更新delay的数据
+					delay=newData;
+					appealDelay(delay);
+					//alert(delay);          //fortest
 					move();
+				}
+				if(newData.message=="test")   //fortest
+				{
+					//console.log("F*k you buuuuuug");
 				}
 				if(newData.end==true){
 					liv.end();
@@ -780,7 +858,7 @@
 			};
 			progr.progressing();
 			setTimeout(function(){mp3.play();},720/speed-600);
-			
+			//myworker.postMessage("test");
 		}
 
 		
@@ -817,7 +895,7 @@
 	</div>
 	<div id="breakMenu">   <!--这个菜单用来重新开始，退出到主菜单，暂停（有待商榷，）-->
 		<input id="goToTheMainMenu" type="button"  value="main menu" onclick="">
-		<input id="restart" type="button" value="restart" onclick="gameStart()">
+		<input id="restart" type="button" value="restart" onclick="gameRestart()">
 	</div>
 	<div  id="finishMenu">
 		score:<p id="finalScore"></p>
@@ -866,6 +944,7 @@
 			$("lifeNumber").innerHTML=scoreBox.life+"";
 			scoreBox.calculateScore();
 			$("scoreNumber").innerHTML=scoreBox.score;
+			console.log(delay);
 		}
 		setInterval(testStatistics,1000);
 		//$("progressBar").style.width="0px"; //fortest
@@ -892,21 +971,36 @@ var numberOfNote=0;
 var bpm=150;
 var Con = (60*1000/bpm/8);   //比例常数
 var delay=0;
-var pauseFlag=false;
-self.onmessage=function(event){
-	var newData=event.data;
-	if(event.data=="pause"){
-		pauseFlag=true;
-		var timer = new Date;
-		pausep=timer.getTime();
-	}else if(event.data=="start"){
-		var timer = new Date;
-		delay+=(timer.getTime()-pausep);
-		self.postMessage(delay);
-		pauseFlag=false;
+var pausep;
+//var pauseFlag=false;
+
+var s=0;
+var flag=false;
+function readScore(){
+	if(s/2!==Math.round(s/2)){
+		if(flag==false){
+			numberOfNote+=score[s];
+			p=StartTime+numberOfNote*Con;
+			flag=true;
+
+		}
+		
+ 		var timer = new Date();
+ 		if(timer.getTime()-delay>p){
+ 			s+=1;
+ 			flag=false;
+ 			
+ 		}
+	}else{
+		//self.postMessage({message:"test",});
+		self.postMessage(score[s]);
+		s+=1;
 	}
 }
+
+
 //-------------下面这个json数组就是乐谱-----------------
+//self.postMessage({message:"test",});
 score = [
 	{bpm:150,speed:1,duration:5300},              //乐谱开头必须要设置bpm和speed，speed不应该小于0.5
 	0,							//数字代表延迟时间（一个三十二分音符），注意数组中，奇数必为json对象（表示该时刻要发射的音符），偶数必须为延迟时间（大于等于0）
@@ -949,21 +1043,25 @@ score = [
 	4,
 	{t4:32},
 	64,         
-	{end:true}    //发送end：true之前必须预留足够的时间让最后的音符落下去
+	{end:true},    //发送end：true之前必须预留足够的时间让最后的音符落下去
 
 ];
-for(var s in score){
-	if(s/2!==Math.round(s/2)){
-		numberOfNote+=score[s];
-		p=StartTime+numberOfNote*Con;
-		do{
-			var timer = new Date();
-			while(pauseFlag==true){
-				;
-			}
-		}while(timer<=p);
-	}else{
-		self.postMessage(score[s]);
+                                                   //新版setInterval乐谱读取,
+
+var contr=setInterval(function(){readScore();},3);
+
+self.onmessage=function(event){                 //监听主线程的消息用来控制暂停和播放
+	var newData=event.data;
+	if(newData=="pause"){
+		var timer = new Date;
+		pausep=timer.getTime();
+		clearInterval(contr);
+	}else if(newData=="start"){
+		var timer = new Date;
+		self.postMessage(timer.getTime()-pausep);
+		delay+=(timer.getTime()-pausep);
+		
+		contr=setInterval(function(){readScore();},3);		
 	}
 }
 	</div>
