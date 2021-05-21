@@ -20,9 +20,9 @@
 			/*background-color: #C0C0C0;*/
 			width:1280px;
 			height:730px;
-			border:solid 1px;
+			border:solid 1px #c3c3c3;
 			position:fixed;
-			top:0px;
+			top:10px;
 			left:50%;
 			margin-left:-640px;
 			
@@ -36,7 +36,7 @@
 		}
 		#track1{
 			left:340px;
-			border-left:solid 1px;
+			border-left:solid 1px #c3c3c3;
 		}
 		#track2{
 			left:490px;
@@ -46,16 +46,16 @@
 		}
 		#track4{
 			left:790px;
-			border-right:solid 1px;
+			border-right:solid 1px #c3c3c3;
 		}
 		.span{
 			position:absolute;
 			top:680px;
 			width:150px;
 			height:50px;
-			border-left:solid 1px;
-			border-top:solid 1px;
-			border-bottom:solid 1px;
+			border-left:solid 1px #c3c3c3;
+			border-top:solid 1px #c3c3c3;
+			border-bottom:solid 1px #c3c3c3;
 			z-index:0;
 		}
 		#span1{
@@ -69,7 +69,7 @@
 		}
 		#span4{
 			left:790px;
-			border-right:solid 1px;
+			border-right:solid 1px #c3c3c3;
 
 		}
 		#progressBar{
@@ -79,7 +79,8 @@
 			z-index: 3;
 		}
 		#testBox{
-			border:solid 1px;
+			display:none;
+			border:solid 1px #c3c3c3;
 			width:1000px;
 			height:400px;
 			position:absolute;
@@ -96,7 +97,7 @@
 			left:50%;
 			top:30%;
 			margin-left:-175px;
-			border:solid 1px;
+			border:solid 1px #c3c3c3;
 			z-index: 1000;
 		}
 		#startTheGame{
@@ -111,7 +112,7 @@
 			left:50%;
 			top:30%;
 			margin-left:-175px;
-			border:solid 1px;
+			border:solid 1px #c3c3c3;
 			z-index: 1000;
 		}
 		#goToTheMainMenu{
@@ -131,7 +132,7 @@
 			left:50%;
 			top:30%;
 			margin-left:-175px;
-			border:solid 1px;
+			border:solid 1px #c3c3c3;
 			z-index: 1000;
 		}
 	</style>
@@ -218,13 +219,14 @@
 
 		var noteAttr = new Object;    //短音符属性盒子
                 noteAttr = {
-                		border  : "1px solid",
+                		border  : "1px solid #c3c3c3",
                         width   : "100px",
                         height  : "40px",
                         position: "absolute",
                         bottom     : "720px",
                         left    : "25px",
                         zIndex  : 2 ,
+                        backgroundColor:"#c3c3c3",
 
             };
 
@@ -245,13 +247,14 @@
 
 		var longNoteAttr = new Object ;  //长音符属性盒子
 				longNoteAttr={
-						border  : "1px solid",
+						border  : "1px solid #c3c3c3",
 						width   : "100px",
 						//height不写
 						position: "absolute",
 						bottom     : "720px",
 						left    : "25px", 
 						zIndex  : 2 ,
+						backgroundColor:"#c3c3c3",
 		};
 
 		var longNote={                      //创建模拟类：长音符,
@@ -679,7 +682,6 @@
 		function gamePrepare(){
 			mp3 = new Audio("src.mp3");
 			mp3.currentTime=0;
-			
 		}
 
 
@@ -767,7 +769,16 @@
 			mp3.currentTime=0;
 			refreshAllTrack();
 			gamePause=false;  //内联数据重置
+			if(remoteControl.myworker!==null)
+				remoteControl.myworker.terminate();
 			gameStart();
+
+		}
+
+		function MP3play(){
+			console.log("F*k you buuuuuug");
+			mp3.currentTime=0;
+			mp3.play();
 		}
 
 		function gameStart(){
@@ -857,7 +868,7 @@
 				}
 			};
 			progr.progressing();
-			setTimeout(function(){mp3.play();},720/speed-600);
+			setTimeout(()=>{MP3play()},720/speed);
 			//myworker.postMessage("test");
 		}
 
@@ -944,7 +955,7 @@
 			$("lifeNumber").innerHTML=scoreBox.life+"";
 			scoreBox.calculateScore();
 			$("scoreNumber").innerHTML=scoreBox.score;
-			console.log(delay);
+			
 		}
 		setInterval(testStatistics,1000);
 		//$("progressBar").style.width="0px"; //fortest
