@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+	<meta charset="utf-8"> 
+	<title>歌曲界面</title>
+	<style>
+		body{
+			background-color:#808080;
+			height: 730px;
+			width: 1280px;
+		}
+		#content{
+			width: 800px;
+			height: 380px;
+			border-style: solid;
+			position:fixed;
+			left:50%;
+			margin-left:-400px;
+		}
+		#choice{
+			width: 350px;
+			height: 200px;
+			border-style: solid;
+			font-size:30px;
+			position:fixed;
+			left:50%;
+			margin-left:-200px;
+			margin-top: 70px;
+		}
+		#button1{
+			padding: 10px 24px;
+			font-size: 25px;
+			position:fixed;
+			left:50%;
+			margin-left:-90px;
+			margin-top: 10px;
+		}
+		#foot{
+			border-style: solid;
+			width: 800px;
+			height: 130px;
+			position:fixed;
+			left:50%;
+			margin-left:-400px;
+			margin-top: 380px;
+		}
+		#music{
+			font-size: 40px
+		}
+		#button2{
+			padding: 240px 24px;
+			font-size: 25px;
+			position:fixed;
+			left:50%;
+			margin-left:-470px;
+		}
+		#button3{
+			padding: 240px 24px;
+			font-size: 25px;
+			position:fixed;
+			left:50%;
+			margin-left:408px;
+		}
+
+	</style>
+</head>
+<body>
+	<div id="content">
+		<form id="choice">
+		<input type="radio" value="4key" name="key"> 4key&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		<input type="radio" value="6key" name="key"> 6key<br>
+		<input type="radio" value="easy" name="difficulty"> easy&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		<input type="radio" value="hard" name="difficulty"> hard<br>
+		<input type="radio" value="survival" name="survival"> survival&nbsp;&nbsp;
+		<input type="radio" value="invincible" name="survival"> invincible<br>
+		<button id="button1">PLAY</button>
+		</form>
+	</div>
+	<div id="foot">
+		<p id="music">歌名：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;作者：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;最高分：</p>
+		
+	</div>
+	<button id="button2"><</button>
+	<button id="button3">></button>
+
+
+</body>
+</html>
