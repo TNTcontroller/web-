@@ -135,10 +135,41 @@
 			border:solid 1px #c3c3c3;
 			z-index: 1000;
 		}
+		#failMenu{
+			display:none;
+			font-size:50px;
+			position:fixed;
+			width:350px;
+			height:300px;
+			left:50%;
+			top:30%;
+			margin-left:-175px;
+			border:solid 1px #c3c3c3;
+			z-index: 1000;
+		}
 	</style>
 	<script>
 
 		//------------------------------------声明区----------------------------------
+									
+		function sleep(delay,fun) {								//自定义非阻塞计时函数
+    		// for(var t = Date.now(); Date.now() - t <= delay;);
+    		var timer = new Date();
+    		var startTime=timer.getTime();
+
+    		var contr=setInterval(function(){
+    			var newTimer=new Date();
+    			if(newTimer.getTime()-startTime>=delay){
+    				fun();
+    				clearInterval(contr);
+    			}
+    		},10);
+		}
+		console.log("1");
+		sleep(10000,function(){console.log("10");});
+
+		
+		
 		function $(s){                       //经常用到这个函数，做一个伪宏定义
 			return document.getElementById(s);
 		}
@@ -151,7 +182,7 @@
 		}
 		var duration=5300;           //总时长，单位为毫秒
 		var bpm=158;         //beat per minute
-		var speed=0.5;       //音符移动速度，单位是1千像素每秒
+		var speed;       //音符移动速度，单位是1千像素每秒
 		var k = 2.5;           //判定范围与音符移动速度的比例系数
                             //k*speed一定要大于1！！！！！！否则判定会很奇怪
                            	//此时也就是speed大于0.5
@@ -186,7 +217,7 @@
 		var tra4Notes = new Array();
 
 		
-		var loselife=1      //在创建不同乐谱时，loselife的值应当可以自定义
+		var loselife=5;      //在创建不同乐谱时，loselife的值应当可以自定义
 		var combo=0;
 
 		var scoreBox={       //定义一个分数对象,
@@ -226,7 +257,7 @@
                         bottom     : "720px",
                         left    : "25px",
                         zIndex  : 2 ,
-                        backgroundColor:"#c3c3c3",
+                        backgroundColor:"black",
 
             };
 
@@ -281,7 +312,7 @@
 				scoreBox.life=0;
 				$("lifeNumber").innerHTML=scoreBox.life+"";
 
-				//youFail();    定义一个函数让游戏结束
+				liv.youFail();    //定义一个函数让游戏结束
 			}
 			$("lifeNumber").innerHTML=scoreBox.life+"";
 
@@ -291,7 +322,17 @@
 
 		function LifeOrNot(){                               //生命对象
 			this.youFail=function(){               //失败函数
+				remoteControl.myworker.terminate();
 				mp3.pause();
+				mp3.currentTime=0;
+				clearInterval(remoteControl.moveContr);
+				document.onkeydown=null;
+				document.onkeyup=null;
+				progr.pause();
+				progr.restart();
+				$("failMenu").style.display="block";
+				scoreBox.refreshAllRecord();
+				refreshAllTrack();
 			};
 			this.pauseStart=function(){                    //暂停函数
 				if(gamePause==false){
@@ -313,7 +354,6 @@
 				clearInterval(remoteControl.moveContr);
 				document.onkeydown=null;
 				document.onkeyup=null;
-				//clearInterval(remoteControl.moveContr);
 				progr.pause();
 				progr.restart();
 				scoreBox.calculateScore();
@@ -422,7 +462,6 @@
 						if(y<=sp.y1&&y>sp.v1)                     //max+
 						{
 							scoreBox.maxPlus+=1;
-							
 						}else if(y<=sp.y2&&y>=sp.y1||y<sp.v1&&y>sp.v2){  //max
 							scoreBox.max+=1;
 						}else if(y<sp.y3&&y>=sp.y2||y<sp.v2&&y>=sp.v3){  //just
@@ -682,6 +721,14 @@
 		function gamePrepare(){
 			mp3 = new Audio("src.mp3");
 			mp3.currentTime=0;
+			//------按钮点击事件注册---
+			
+			$("startTheGame").onclick=function(){
+				new gameStart();
+			};
+			$("restart").onclick=function(){
+				new gameStart();
+			};
 		}
 
 
@@ -771,7 +818,7 @@
 			gamePause=false;  //内联数据重置
 			if(remoteControl.myworker!==null)
 				remoteControl.myworker.terminate();
-			gameStart();
+			new gameStart();
 
 		}
 
@@ -789,17 +836,17 @@
 			var timer=new Date();
 			startTime=timer.getTime();
 			delay=0;
-			beatStart();
+			
 			move();
 			//mp3.play();
 			if(typeof(Worker)=="undefined")
 				alert("浏览器不支持Web Worker多线程，无法运行");
-			//-------------网上抄来的webworker放在同一页面的技巧----------
-				const urlObject = window.URL || window.webkitURL || window;
-				const blob = new Blob([document.getElementById("worker").textContent]);
-				const url = urlObject.createObjectURL(blob);
-				const myworker = new Worker(url);
-				remoteControl.myworker=myworker;
+			//-------------网上抄来的webworker放在同一页面的技巧,为了本地运行方便起见,而且wampserver服务很不靠谱，有的时候webworker就不能直接用了----------
+			const urlObject = window.URL || window.webkitURL || window;
+			const blob = new Blob([document.getElementById("worker").textContent]);
+			const url = urlObject.createObjectURL(blob);
+			const myworker = new Worker(url);
+			remoteControl.myworker=myworker;
 			//----------------------------
 			//var myworker = new Worker('MusicReader.js');
 			//------------------以下为错误捕捉-------------
@@ -808,7 +855,7 @@
 				// }, false);
 				
 			//-----------------------------------------
-			
+			var initial=false;
 			var startFlag=true;                //确保duration的更新只执行一次
 			myworker.onmessage=function(event){
 				var newData = event.data;
@@ -846,6 +893,7 @@
 
 				if(newData.bpm>0){
 					bpm=newData.bpm;
+					initial=true;
 				}
 
 				if(newData.speed>0){
@@ -868,12 +916,18 @@
 				}
 			};
 			progr.progressing();
-			setTimeout(()=>{MP3play()},720/speed);
+			//MP3play();
+			var contr=setInterval(function(){
+				if(initial==true){
+					sleep(720/speed+1530,MP3play);            //调用自定义非阻塞延迟函数
+					beatStart();							  //如果你问我是怎么解决这个bug的，我只能说，有一说一，这种事情我见的多了，我只想说懂得都懂，不懂的我也不多说了，说了你也不明白，不如不说，细细品吧，你也别来问我怎么回事，这里面利益牵扯太大了，说了对你我都没有好处，你就当不知道就行了，其余的我只能说这里水很深，牵扯到很多东西，详细情况你们很难找到的，网上大部分都删干净了。
+					clearInterval(contr);
+				}
+			},5);
+			//setTimeout(()=>{MP3play()},720/speed);    //修改乐曲播放延时
 			//myworker.postMessage("test");
 		}
-
 		
-
 	</script>
 	<!--link rel="stylesheet" type="text/css" href="*.css"-->
 	<!--script type="text/javascript" src=""><script-->
@@ -901,20 +955,21 @@
     <!--要弹出==============↓↓↓↓↓↓↓↓↓↓↓↓↓=================的菜单-->
 	<div id="startMenu">
 		<!--要包含:开始游戏按钮、延迟修正进度条、回到主菜单页面   -->
-		<input id="startTheGame" type="button" onclick="gameStart()" value="start">	
+		<input id="startTheGame" type="button" value="start">	
 		<div id="amendTheDelay"></div>
 	</div>
 	<div id="breakMenu">   <!--这个菜单用来重新开始，退出到主菜单，暂停（有待商榷，）-->
-		<input id="goToTheMainMenu" type="button"  value="main menu" onclick="">
-		<input id="restart" type="button" value="restart" onclick="gameRestart()">
+		<input id="breakGoToTheMainMenu" type="button"  value="main menu" onclick="">
+		<input id="breakRestart" type="button" value="restart" onclick="gameRestart()">
 	</div>
 	<div  id="finishMenu">
 		score:<p id="finalScore"></p>
 		<input id="goToTheMainMenu" type="button"  value="Main menu" onclick="">
-		<input id="restart" type="button"  value="restart" onclick="gameStart()">
+		<input id="restart" type="button"  value="restart" >
 	</div>
 	<div  id="failMenu">
-		
+		<input id="failRestart" type="button"  value="restart" onclick="gameStart()">
+		<input id="failGoToTheMainMenu" type="button"  value="Main menu" onclick="">
 	</div>
 	<!--要弹出===================↑↑↑↑↑↑↑↑↑↑↑↑↑==============的菜单-->
 
@@ -979,7 +1034,7 @@ var StartTime= timer.getTime();
 var p = StartTime;               //时间戳
 var score;
 var numberOfNote=0;
-var bpm=150;
+var bpm=150;                 //制作乐谱时自行修改
 var Con = (60*1000/bpm/8);   //比例常数
 var delay=0;
 var pausep;
@@ -1013,8 +1068,8 @@ function readScore(){
 //-------------下面这个json数组就是乐谱-----------------
 //self.postMessage({message:"test",});
 score = [
-	{bpm:150,speed:1,duration:5300},              //乐谱开头必须要设置bpm和speed，speed不应该小于0.5
-	0,							//数字代表延迟时间（一个三十二分音符），注意数组中，奇数必为json对象（表示该时刻要发射的音符），偶数必须为延迟时间（大于等于0）
+	{bpm:150,speed:2,duration:5300},              //乐谱开头必须要设置bpm和speed，speed不应该小于0.5，duration是歌曲的长度（单位为32分音符，用来 控制进度条）
+	32,							//数字代表延迟时间（一个三十二分音符），注意数组中，奇数必为json对象（表示该时刻要发射的音符），偶数必须为延迟时间（大于等于0）
 	{t1:0},                         //150 bpm 四分音符等于400毫秒 ,32分音符为50毫秒 
 	8,
 	{t4:0},
@@ -1047,7 +1102,6 @@ score = [
 	4,
 	{t1:32},
 	4,
-
 	{t2:32},
 	4,
 	{t3:32},
