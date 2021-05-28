@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>平面国音游</title>
+	<style>
+		@font-face{
+			font-family: PxFont;
+			src: url('ARCADE.TTF');
+		}
+		*{
+			background-color: #808080;
+			font-family: PxFont;
+			font-size:30px;
+		}
+		body{
+			height:2000px;
+		}
+		#content{
+			/*background-color: #C0C0C0;*/
+			width:1280px;
+			height:730px;
+			border:solid 1px #c3c3c3;
+			position:fixed;
+			top:10px;
+			left:50%;
+			margin-left:-640px;
+			
+		}
+		.track{
+			position:absolute;
+			width:150px;
+			height:670px;
+			/*border-left:solid 1px;*/
+			top:10px;
+		}
+		#track1{
+			left:340px;
+			border-left:solid 1px #c3c3c3;
+		}
+		#track2{
+			left:490px;
+		}
+		#track3{
+			left:640px;
+		}
+		#track4{
+			left:790px;
+			border-right:solid 1px #c3c3c3;
+		}
+		.span{
+			position:absolute;
+			top:680px;
+			width:150px;
+			height:50px;
+			border-left:solid 1px #c3c3c3;
+			border-top:solid 1px #c3c3c3;
+			border-bottom:solid 1px #c3c3c3;
+			z-index:0;
+		}
+		#span1{
+			left: 340px;
+		}
+		#span2{
+			left:490px;
+		}
+		#span3{
+			left:640px;
+		}
+		#span4{
+			left:790px;
+			border-right:solid 1px #c3c3c3;
+
+		}
+		#progressBar{
+			width:0px;
+			height:9px;
+			background-color:yellow;
+			z-index: 3;
+		}
+		#testBox{
+			display:none;
+			border:solid 1px #c3c3c3;
+			width:1000px;
+			height:400px;
+			position:absolute;
+			top:70%;
+			left:50%;
+			margin-left:-500px;
+		}
+		#startMenu{
+			display: block;
+			font-size:50px;
+			position:fixed;
+			width:350px;
+			height:300px;
+			left:50%;
+			top:30%;
+			margin-left:-175px;
+			border:solid 1px #c3c3c3;
+			z-index: 1000;
+		}
+		#startTheGame{
+			width:120px;height:60px;position:absolute;top:20px;left:110px;font-size:50px;
+		}
+		#breakMenu{
+			display:none;
+			font-size:50px;
+			position:fixed;
+			width:350px;
+			height:300px;
+			left:50%;
+			top:30%;
+			margin-left:-175px;
+			border:solid 1px #c3c3c3;
+			z-index: 1000;
+		}
+		#goToTheMainMenu{
+			width:120px;
+			height:60px;
+			position:absolute;
+			top:20px;
+			left:110px;
+			font-size:50px;
+		}
+		#finishMenu{
+			display:none;
+			font-size:50px;
+			position:fixed;
+			width:350px;
+			height:300px;
+			left:50%;
+			top:30%;
+			margin-left:-175px;
+			border:solid 1px #c3c3c3;
+			z-index: 1000;
+		}
+		#failMenu{
+			display:none;
+			font-size:50px;
+			position:fixed;
+			width:350px;
+			height:300px;
+			left:50%;
+			top:30%;
+			margin-left:-175px;
+			border:solid 1px #c3c3c3;
+			z-index: 1000;
+		}
+	</style>
+	<script>
+
+		//------------------------------------声明区----------------------------------
+									
+		function sleep(delay,fun) {								//自定义非阻塞计时函数
+    		// for(var t = Date.now(); Date.now() - t <= delay;);
+    		var timer = new Date();
+    		var startTime=timer.getTime();
+
+    		var contr=setInterval(function(){
+    			var newTimer=new Date();
+    			if(newTimer.getTime()-startTime>=delay){
+    				fun();
+    				clearInterval(contr);
+    			}
+    		},10);
+		}
+
+
+		
+		
+		function $(s){                       //经常用到这个函数，做一个伪宏定义
+			return document.getElementById(s);
+		}
+		var mp3;
+		var gamePause=false;
+		var delay=0;
+		var startTime;
+		var remoteControl={
+
+		}
+		var duration;           //总时长，单位为毫秒
+		var bpm;         //beat per minute
+		var speed;       //音符移动速度，单位是1千像素每秒
+		var k = 2.5;           //判定范围与音符移动速度的比例系数
+                            //k*speed一定要大于1！！！！！！否则判定会很奇怪
+                           	//此时也就是speed大于0.5
+
+		function Sp(){
+			;
+		}
+		
+		Sp.prototype.y1=-45+k*speed*5;                   //中点起-45
+		Sp.prototype.y2=-45+k*speed*15;
+		Sp.prototype.y3=-45+k*speed*35;
+		Sp.prototype.y4=-45+k*speed*45;
+		Sp.prototype.v1=-45-k*speed*5;
+		Sp.prototype.v2=-45-k*speed*15;
+		Sp.prototype.v3=-45-k*speed*35;
+		Sp.prototype.v4=-45-k*speed*45;
+		Sp.prototype.refresh=function(){
+			Sp.prototype.y1=-45+k*speed*5;
+			Sp.prototype.y2=-45+k*speed*15;
+			Sp.prototype.y3=-45+k*speed*35;
+			Sp.prototype.y4=-45+k*speed*45;
+			Sp.prototype.v1=-45-k*speed*5;
+			Sp.prototype.v2=-45-k*speed*15;
+			Sp.prototype.v3=-45-k*speed*35;
+			Sp.prototype.v4=-45-k*speed*45;
+		};
+		var sp = new Sp();
+
+		var tra1Notes = new Array();//分别存储四个轨道的音符对象
+		var tra2Notes = new Array();
+		var tra3Notes = new Array();
+		var tra4Notes = new Array();
+
+		
+		var loselife=0;      //在创建不同乐谱时，loselife的值应当可以自定义
+		var combo=0;
+
+		var scoreBox={       //定义一个分数对象,
+			life:100,
+			score:0,            
+			maxCombo:0,
+			maxPlus:0,          //100
+			max:0,				//90
+			just:0,				//60
+			good:0,				//50
+			miss:0,				//0
+			refreshMaxCombo:function(){
+				if(combo>scoreBox.maxCombo)
+					scoreBox.maxCombo=combo;
+			},
+			calculateScore:function(){
+				scoreBox.score=100*scoreBox.maxPlus+90*scoreBox.max+60*scoreBox.just+50*scoreBox.good;
+			},
+			refreshAllRecord:function(){
+				scoreBox.life=100;
+				scoreBox.score=0;
+				scoreBox.maxCombo=0;
+				scoreBox.maxPlus=0;
+				scoreBox.max=0;
+				scoreBox.just=0;
+				scoreBox.good=0;
+				scoreBox.miss=0;
+			}
+		};
+
+		var noteAttr = new Object;    //短音符属性盒子
+                noteAttr = {
+                		border  : "1px solid #c3c3c3",
+                        width   : "100px",
+                        height  : "40px",
+                        position: "absolute",
+                        bottom     : "720px",
+                        left    : "25px",
+                        zIndex  : 2 ,
+                        backgroundColor:"black",
+
+            };
+
+		var Note={                          //创建模拟类：短音符
+			createNew:function(){				//类的实例化函数
+				var note={};                    //对象体，有两个实例字段，startTime和ele
+				var d = new Date;
+				note.startTime = d.getTime();
+				var a=document.createElement("span");  //创建html元素
+				for(var s in noteAttr){
+            		a.style[s]=noteAttr[s];
+            	}
+				note.ele = a;
+				note.islNote=false;
+				return note;
+			},
+		}
+
+		var longNoteAttr = new Object ;  //长音符属性盒子
+				longNoteAttr={
+						border  : "1px solid #c3c3c3",
+						width   : "100px",
+						//height不写
+						position: "absolute",
+						bottom     : "720px",
+						left    : "25px", 
+						zIndex  : 2 ,
+						backgroundColor:"black",
+		};
+
+		var longNote={                      //创建模拟类：长音符,
+			createNew:function(length,t){
+				var lnote={};                         //有两个实例字段，startTime和ele
+				var d = new Date ;
+				lnote.startTime = d.getTime();
+				var a = document.createElement("span");
+				for(var s in longNoteAttr){
+					a.style[s] = longNoteAttr[s];
+				}
+				a.style.height = length+"px";
+				lnote.ele=a;
+				lnote.islNote=true;
+				lnote.noteQuant=parseInt(t/2);       //避免分数膨胀，把音符连击数除以2
+				return lnote;
+			},
+		}
+
+		function miss(){
+			scoreBox.life=scoreBox.life-loselife;
+			if(scoreBox.life<=0)
+			{
+				scoreBox.life=0;
+				$("lifeNumber").innerHTML=scoreBox.life+"";
+
+				liv.youFail();    //定义一个函数让游戏结束
+			}
+			$("lifeNumber").innerHTML=scoreBox.life+"";
+
+			scoreBox.miss+=1;
+			combo=0;
+		}
+
+		function LifeOrNot(){                               //生命对象
+			this.youFail=function(){               //失败函数
+				remoteControl.myworker.terminate();
+				mp3.pause();
+				mp3.currentTime=0;
+				clearInterval(remoteControl.moveContr);
+				document.onkeydown=null;
+				document.onkeyup=null;
+				progr.pause();
+				progr.restart();
+				$("failMenu").style.display="block";
+				scoreBox.refreshAllRecord();
+				refreshAllTrack();
+			};
+			this.pauseStart=function(){                    //暂停函数
+				if(gamePause==false){
+					$("breakMenu").style.display="inline";     //显示暂停菜单
+					mp3.pause();
+					progr.pause();                            //停止进度条
+					gamePause=true;                           
+					clearInterval(remoteControl.moveContr);  //停止移动
+					remoteControl.myworker.postMessage("pause");            //发送消息给worker停止读取乐谱
+				}else{
+					$("breakMenu").style.display="none";	 //隐藏暂停菜单
+					mp3.play();
+					progr.progressing();                   	 //进度条继续走
+					gamePause=false;
+					remoteControl.myworker.postMessage("start");           //发送消息给worker继续读取乐谱
+				}
+			}
+			this.end=function(){
+				clearInterval(remoteControl.moveContr);
+				document.onkeydown=null;
+				document.onkeyup=null;
+				progr.pause();
+				progr.restart();
+				scoreBox.calculateScore();
+				$("finishMenu").style.display="block";
+				$("finalScore").innerHTML=scoreBox.score+"";
+				scoreBox.refreshAllRecord();
+				mp3.pause();
+				mp3.currentTime=0;
+				refreshAllTrack();
+			};
+		}
+		var liv = new LifeOrNot;
+
+		
+
+
+		var lFlag1 = false;                           //lFlag表示长音符是否被击中
+		var lFlag2 = false;
+		var lFlag3 = false;
+		var lFlag4 = false;
+		function beatStart(){                              //控制键盘按下的函数
+			var flag1 = false;                             //onkeydown事件会在键盘的一个键被持续按下的时候不断地发生，要用onkeyup来修正
+			var flag2 = false;                                               //发现待解决新问题！！！！判定范围大小应当与速度成正比，
+			var flag3 = false;												//否则速度快了就很难击中音符
+			var flag4 = false;
+
+
+			function changeColor(n,color){
+				var eleName='track'+n;
+				$(eleName).style.backgroundColor=color;
+			}
+			
+						//p.s我是散兵，之前写的时候干嘛要用top属性，用bottom属性的话，写长音符的时候就不用加修正量了
+			document.onkeydown = function(event){
+				var e = event || window.event;
+				if(e.keyCode==68){                          //D键
+					if(flag1==true)                         //判断是否是重复的键盘按下事件
+						return;
+					flag1=true;
+					changeColor(1,"#C0C0C0");
+					var y=parseInt(tra1Notes[0].ele.style.bottom);
+					if(y<=sp.y4&&y>=sp.v4){										//判定横线的中点为-45
+						if(tra1Notes[0].islNote==true){                         //长音符情况
+							lFlag1=true;
+							scoreBox.maxPlus+=1;
+							combo+=1;
+							return;
+						}
+
+						if(y<=sp.y1&&y>sp.v1)                     //max+ 判定范围正负5的倍数
+						{
+							scoreBox.maxPlus+=1;
+						}else if(y<=sp.y2&&y>=sp.y1||y<sp.v1&&y>=sp.v2){  //max         范围正负15到5的倍数 
+							scoreBox.max+=1;
+						}else if(y<sp.y3&&y>=sp.y2||y<sp.v2&&y>=sp.v3){  //just
+							scoreBox.just+=1;
+						}else if(y<sp.y4&&y>=sp.y3||y<sp.v3&&y>=sp.v4){  //good
+							scoreBox.good+=1;
+						}
+						tra1Notes[0].ele.remove();
+						tra1Notes.shift();
+						combo+=1;
+						scoreBox.refreshMaxCombo();
+					}
+				}else if(e.keyCode==70){                  //F键
+					if(flag2==true)
+						return;
+					flag2=true;
+					changeColor(2,"#C0C0C0");
+					var y=parseInt(tra2Notes[0].ele.style.bottom)
+					if(y<=sp.y4&&y>=sp.v4){
+						if(tra2Notes[0].islNote==true){                         //长音符情况
+							lFlag2=true;
+							scoreBox.maxPlus+=1;
+							combo+=1;
+							return;
+						}
+						if(y<=sp.y1&&y>sp.v1)                     //max+
+						{
+							scoreBox.maxPlus+=1;
+						}else if(y<=sp.y2&&y>=sp.y1||y<sp.v1&&y>sp.v2){  //max
+							scoreBox.max+=1;
+						}else if(y<sp.y3&&y>=sp.y2||y<sp.v2&&y>=sp.v3){  //just
+							scoreBox.just+=1;
+						}else if(y<sp.y4&&y>=sp.y3||y<sp.v3&&y>=sp.v4){  //good
+							scoreBox.good+=1;
+						}
+						tra2Notes[0].ele.remove();          //从网页上移除音符元素
+						tra2Notes.shift();                  //从数组中移除音符对象
+						combo+=1;
+						scoreBox.refreshMaxCombo();
+					}
+				}else if(e.keyCode==74){                  //J键
+					if(flag3==true)
+						return;
+					flag3=true;
+					changeColor(3,"#C0C0C0");
+					var y=parseInt(tra3Notes[0].ele.style.bottom)
+					if(y<=sp.y4&&y>=sp.v4){
+						if(tra3Notes[0].islNote==true){                         //长音符情况
+							lFlag3=true;
+							scoreBox.maxPlus+=1;
+							combo+=1;
+							return;
+						}
+						if(y<=sp.y1&&y>sp.v1)                     //max+
+						{
+							scoreBox.maxPlus+=1;
+						}else if(y<=sp.y2&&y>=sp.y1||y<sp.v1&&y>sp.v2){  //max
+							scoreBox.max+=1;
+						}else if(y<sp.y3&&y>=sp.y2||y<sp.v2&&y>=sp.v3){  //just
+							scoreBox.just+=1;
+						}else if(y<sp.y4&&y>=sp.y3||y<sp.v3&&y>=sp.v4){  //good
+							scoreBox.good+=1;
+						}
+						tra3Notes[0].ele.remove();
+						tra3Notes.shift();
+						combo+=1;
+						scoreBox.refreshMaxCombo();
+					}
+				}else if(e.keyCode==75){                  //K键
+					if(flag4==true)
+						return;
+					flag4=true;
+					changeColor(4,"#C0C0C0");
+					var y=parseInt(tra4Notes[0].ele.style.bottom)
+					if(y<=sp.y4&&y>=sp.v4){
+						if(tra4Notes[0].islNote==true){                         //长音符情况
+							lFlag4=true;
+							scoreBox.maxPlus+=1;
+							combo+=1;
+							return;
+						}
+						if(y<=sp.y1&&y>sp.v1)                     //max+
+						{
+							scoreBox.maxPlus+=1;
+						}else if(y<=sp.y2&&y>=sp.y1||y<sp.v1&&y>sp.v2){  //max
+							scoreBox.max+=1;
+						}else if(y<sp.y3&&y>=sp.y2||y<sp.v2&&y>=sp.v3){  //just
+							scoreBox.just+=1;
+						}else if(y<sp.y4&&y>=sp.y3||y<sp.v3&&y>=sp.v4){  //good
+							scoreBox.good+=1;
+						}
+						tra4Notes[0].ele.remove();
+						tra4Notes.shift();
+						combo+=1;
+						scoreBox.refreshMaxCombo();
+					}
+				}else if(e.keyCode==27){                  //ESC键
+					var timer=new Date();
+					if(timer.getTime()-startTime>2000){
+						liv.pauseStart();
+					}
+				}
+			} 
+			document.onkeyup = function(event){
+				var e = event || window.event;
+				var n;   //长音符连击次数
+				if(e.keyCode==68){
+					changeColor(1,"#808080");
+					flag1=false;
+					if(lFlag1==true){
+						lFlag1=false;
+
+						// n=math1(Math.round(-45-parseInt(tra1Notes[0].ele.style.bottom)*bpm/7500/speed));
+						// //alert(tra1Notes[0].ele.style.bottom);//fortest
+						// scoreBox.maxPlus+=n;
+						// combo+=n;
+						// tra1Notes.shift().ele.remove();
+						var temp=parseInt(tra1Notes[0].ele.style.bottom)-40+parseInt(tra1Notes[0].ele.style.height);
+						if(temp>sp.v4&&temp<sp.y4){
+							scoreBox.maxPlus+=tra1Notes[0].noteQuant;
+							combo+=tra1Notes[0].noteQuant;
+							scoreBox.refreshMaxCombo();
+						}else{
+							miss();
+						}
+						tra1Notes.shift().ele.remove();
+					}
+
+						
+				}else if(e.keyCode==70){
+					changeColor(2,"#808080");
+					flag2=false;
+					if(lFlag2==true){
+						lFlag2=false;
+						var temp=parseInt(tra2Notes[0].ele.style.bottom)-40+parseInt(tra2Notes[0].ele.style.height);
+						if(temp>sp.v4&&temp<sp.y4){
+							scoreBox.maxPlus+=tra2Notes[0].noteQuant;
+							combo+=tra2Notes[0].noteQuant;
+							scoreBox.refreshMaxCombo();
+						}else{
+							miss();
+						}
+						tra2Notes.shift().ele.remove();
+					}
+				}else if(e.keyCode==74){
+					changeColor(3,"#808080");
+					flag3=false;
+					if(lFlag3==true){
+						lFlag3=false;
+						var temp=parseInt(tra3Notes[0].ele.style.bottom)-40+parseInt(tra3Notes[0].ele.style.height);
+						if(temp>sp.v4&&temp<sp.y4){
+							scoreBox.maxPlus+=tra3Notes[0].noteQuant;
+							combo+=tra3Notes[0].noteQuant;
+							scoreBox.refreshMaxCombo();
+						}else{
+							miss();
+						}
+						tra3Notes.shift().ele.remove();
+					}
+				}else if(e.keyCode==75){
+					changeColor(4,"#808080");
+					flag4=false;
+					if(lFlag4==true){
+						lFlag4=false;
+						var temp=parseInt(tra4Notes[0].ele.style.bottom)-40+parseInt(tra4Notes[0].ele.style.height);
+						if(temp>sp.v4&&temp<sp.y4){
+							scoreBox.maxPlus+=tra4Notes[0].noteQuant;
+							combo+=tra4Notes[0].noteQuant;
+							scoreBox.refreshMaxCombo();
+						}else{
+							miss();
+						}
+						tra4Notes.shift().ele.remove();
+					}
+				}
+			}
+		}	
+
+		function move(){                                       //移动函数，负责移动和删除         
+			 function modifyY(){
+				var timer = new Date();	
+				for(var s in tra1Notes){									//track1
+					var y=720-(timer.getTime()-tra1Notes[s].startTime)*speed;
+					var amendment = 0;
+					amendment=parseInt(tra1Notes[s].ele.style.height)-40;
+					if(y>=sp.v4-amendment){
+						
+						tra1Notes[s].ele.style.bottom=y+"px";
+					}
+					else{
+						tra1Notes[s].ele.remove();
+						tra1Notes.shift();
+						miss();
+						lFlag1=false;
+
+						//这里要执行一个操作，让连击数（combo）等于0
+					}
+				}
+				for(var s in tra2Notes){									//track2
+					var y=720-(timer.getTime()-tra2Notes[s].startTime)*speed;
+					var amendment = 0;
+					amendment=parseInt(tra2Notes[s].ele.style.height)-40;
+					if(y>=sp.v4-amendment)
+						tra2Notes[s].ele.style.bottom=y+"px";
+					else{
+						tra2Notes[s].ele.remove();
+						tra2Notes.shift();
+						miss();
+						lFlag2=false;
+						//这里要执行一个操作，让连击数（combo）等于0
+					}
+				}
+				for(var s in tra3Notes){									//track3
+					var y=720-(timer.getTime()-tra3Notes[s].startTime)*speed;
+					var amendment = 0;
+				 	amendment=parseInt(tra3Notes[s].ele.style.height)-40;
+					if(y>=sp.v4-amendment)
+						tra3Notes[s].ele.style.bottom=y+"px";
+					else{
+						tra3Notes[s].ele.remove();
+						tra3Notes.shift();
+						miss();
+						lFlag3=false;
+						//这里要执行一个操作，让连击数（combo）等于0
+					}
+				}
+				for(var s in tra4Notes){									//track4
+					var y=720-(timer.getTime()-tra4Notes[s].startTime)*speed;
+					var amendment = 0;
+				 	amendment=parseInt(tra4Notes[s].ele.style.height)-40;
+					if(y>=sp.v4-amendment)                                             //移动
+						tra4Notes[s].ele.style.bottom=y+"px";
+					else{                                                   //删除没被击中的音符并执行miss函数
+						tra4Notes[s].ele.remove();
+						tra4Notes.shift();
+						miss();
+						lFlag4=false;
+						//这里要执行一个操作，让连击数（combo）等于0
+					}
+				}
+				/*for(var s in tra1Notes){
+					alert(timer.getTime()-tra1Notes[s].startTime);
+				}测试时间获取正常与否的语句*/
+			}
+			remoteControl.moveContr=setInterval(modifyY,16);
+		}
+
+		function appealDelay(){
+			for(var s in tra1Notes){
+				tra1Notes[s].startTime+=delay;
+			}
+			for(var s in tra2Notes){
+				tra2Notes[s].startTime+=delay;
+			}
+			for(var s in tra3Notes){
+				tra3Notes[s].startTime+=delay;
+			}
+			for(var s in tra4Notes){
+				tra4Notes[s].startTime+=delay;
+			}
+		}
+
+		function refreshAllTrack(){             //清空轨道函数
+			for(var s in tra1Notes){
+				tra1Notes[s].ele.remove();
+			}
+			for(var s in tra2Notes){
+				tra2Notes[s].ele.remove();
+			}
+			for(var s in tra3Notes){
+				tra3Notes[s].ele.remove();
+			}
+			for(var s in tra4Notes){
+				tra4Notes[s].ele.remove();
+			}
+			while(tra1Notes[0]!==undefined){
+				tra1Notes.shift();
+			}
+			while(tra2Notes[0]!==undefined){
+				tra2Notes.shift();
+			}
+			while(tra3Notes[0]!==undefined){
+				tra3Notes.shift();
+			}
+			while(tra4Notes[0]!==undefined){
+				tra4Notes.shift();
+			}
+		}
+
+		function progressBar(){
+			var contr;              //控制暂停,false代表暂停
+			//this.progress=0;   //进度条从0%到100%
+			
+			this.progressing=function(){
+				clearInterval(contr);
+				contr=setInterval(function(){
+					var width=$("progressBar").style.width;
+					//alert(width); //fortest
+					if(parseFloat(width)<1280){
+						$("progressBar").style.width=(parseFloat(width)+12.8)+"px";
+					}
+				},parseInt(duration/8*60/bpm*1000/100));
+			}
+			this.pause=function(){
+				clearInterval(contr);
+			};
+			this.restart=function(){
+				$("progressBar").style.width="0px";
+			};
+		}
+		var progr= new progressBar;
+
+		function gamePrepare(){
+			mp3 = new Audio("Walk with your smile src.mp3");
+			mp3.currentTime=0;
+		}
+
+
+		//--------------------------以下是testbox的代码，用于开发测试-------------------------------
+
+		
+
+		function makeaNoteToTrack1(){                                       //以下四个函数负责把短音符放到轨道上
+			var newNote = Note.createNew();
+            document.getElementById("track1").appendChild(newNote.ele);
+            tra1Notes.push(newNote);
+            //alert(newNote.startTime);
+		}
+
+		function makeaNoteToTrack2(){
+			var newNote = Note.createNew();
+            document.getElementById("track2").appendChild(newNote.ele);
+            tra2Notes.push(newNote);
+            //alert(newNote.startTime);
+		}
+
+		function makeaNoteToTrack3(){
+			var newNote = Note.createNew();
+            document.getElementById("track3").appendChild(newNote.ele);
+            tra3Notes.push(newNote);
+            //alert(newNote.startTime);
+		}
+
+		function makeaNoteToTrack4(){
+			var newNote = Note.createNew();
+            document.getElementById("track4").appendChild(newNote.ele);
+            tra4Notes.push(newNote);
+            //alert(newNote.startTime);
+		}
+
+		//长音符的长度=（60/bpm/8*t*speed）*1000  （单位为px）
+
+		/*function makeaLongNoteToTrack1(t){              //t在这里指的是长音符对应的三十二分音符的数量
+			var newlNote = longNote.createNew((60/bpm/8*t*speed)*1000);
+			$("track1").appendChild(newlNote.ele);
+			tra1Notes.push(newlNote);
+			//tra3Notes
+		}*/
+
+		function makeaLongNoteToTrack1(t){              //t在这里指的是音符连击数
+			var newlNote = longNote.createNew((60*1000*t*speed/bpm/8),t);
+			$("track1").appendChild(newlNote.ele);
+			tra1Notes.push(newlNote);
+			//tra1Notes
+		}
+		function makeaLongNoteToTrack2(t){              //t在这里指的是音符连击数
+			var newlNote = longNote.createNew((60*1000*t*speed/bpm/8),t);
+			$("track2").appendChild(newlNote.ele);
+			tra2Notes.push(newlNote);
+			//tra2Notes
+		}
+		function makeaLongNoteToTrack3(t){              //t在这里指的是音符连击数
+			var newlNote = longNote.createNew((60*1000*t*speed/bpm/8),t);
+			$("track3").appendChild(newlNote.ele);
+			tra3Notes.push(newlNote);
+			//tra3Notes
+		}
+		function makeaLongNoteToTrack4(t){              //t在这里指的是音符连击数
+			var newlNote = longNote.createNew((60*1000*t*speed/bpm/8),t);
+			$("track4").appendChild(newlNote.ele);
+			tra4Notes.push(newlNote);
+			//tra4Notes
+		}
+
+		function generateLong1(){                         //测试用函数-----
+			var t = parseInt($("inputLength").value);
+			makeaLongNoteToTrack1(t);
+		}
+
+		//---------------------------------------游戏启动代码--------------------------------------
+		window.onload = gamePrepare;
+
+		function gameRestart(){
+			document.onkeydown=null;
+			document.onkeyup=null;
+			progr.pause();
+			progr.restart();
+			scoreBox.refreshAllRecord();
+			mp3.pause();
+			mp3.currentTime=0;
+			refreshAllTrack();
+			gamePause=false;  //内联数据重置
+			if(remoteControl.myworker!==null)
+				remoteControl.myworker.terminate();
+			new gameStart();
+
+		}
+
+		function MP3play(){
+			console.log("F*k you buuuuuug");
+			mp3.currentTime=0;
+			mp3.play();
+		}
+
+		function gameStart(){
+			$("startMenu").style.display="none";
+			$("finishMenu").style.display="none";
+			$("breakMenu").style.display="none";
+			$("failMenu").style.display="none";
+			var timer=new Date();
+			startTime=timer.getTime();
+			delay=0;
+			
+			move();
+			//mp3.play();
+			if(typeof(Worker)=="undefined")
+				alert("浏览器不支持Web Worker多线程，无法运行");
+			//-------------网上抄来的webworker放在同一页面的技巧,为了本地运行方便起见,而且wampserver服务很不靠谱，有的时候webworker就不能直接用了----------
+			const urlObject = window.URL || window.webkitURL || window;
+			const blob = new Blob([document.getElementById("worker").textContent]);
+			const url = urlObject.createObjectURL(blob);
+			const myworker = new Worker(url);
+			remoteControl.myworker=myworker;
+			//----------------------------
+			//var myworker = new Worker('MusicReader.js');
+			//------------------以下为错误捕捉-------------
+				// myworker.addEventListener("error", function(evt){
+				// 	alert("Line #" + evt.lineno + " - " + evt.message + " in " + evt.filename);
+				// }, false);
+				
+			//-----------------------------------------
+			var initial=false;
+			var startFlag=true;                //确保duration的更新只执行一次
+			myworker.onmessage=function(event){
+				var newData = event.data;
+				if(startFlag==true){
+					startFlag=false;
+					duration=newData.duration;
+				}
+				if(newData.t1==0){
+					makeaNoteToTrack1();
+				}else if(newData.t1>0)
+				{
+					makeaLongNoteToTrack1(newData.t1);
+				}
+
+				if(newData.t2==0){
+					makeaNoteToTrack2();
+				}else if(newData.t2>0)
+				{
+					makeaLongNoteToTrack2(newData.t2);
+				}
+
+				if(newData.t3==0){
+					makeaNoteToTrack3();
+				}else if(newData.t3>0)
+				{
+					makeaLongNoteToTrack3(newData.t3);
+				}
+
+				if(newData.t4==0){
+					makeaNoteToTrack4();
+				}else if(newData.t4>0)
+				{
+					makeaLongNoteToTrack4(newData.t4);
+				}
+
+				if(newData.bpm>0){
+					bpm=newData.bpm;
+					
+				}
+
+				if(newData.speed>0){
+					speed=newData.speed;
+					sp.refresh();        //由于速度变化，刷新一下判定范围
+					initial=true;
+				}
+				if(typeof newData=="number"){     //更新delay的数据
+					delay=newData;
+					appealDelay(delay);
+					//alert(delay);          //fortest
+					move();
+				}
+				if(newData.message=="test")   //fortest
+				{
+					//console.log("F*k you buuuuuug");
+				}
+				if(newData.end==true){
+					liv.end();
+					myworker.terminate();
+				}
+			};
+			
+			//MP3play();
+			var contr=setInterval(function(){
+				if(initial==true){
+					console.log("getReady");
+					progr.progressing();
+					sleep(720/speed+7500,MP3play);            //调用自定义非阻塞延迟函数
+					beatStart();							  //如果你问我是怎么解决这个bug的，我只能说，有一说一，这种事情我见的多了，我只想说懂得都懂，不懂的我也不多说了，说了你也不明白，不如不说，细细品吧，你也别来问我怎么回事，这里面利益牵扯太大了，说了对你我都没有好处，你就当不知道就行了，其余的我只能说这里水很深，牵扯到很多东西，详细情况你们很难找到的，网上大部分都删干净了。
+					clearInterval(contr);
+				}
+			},5);
+			//setTimeout(()=>{MP3play()},720/speed);    //修改乐曲播放延时
+			//myworker.postMessage("test");
+		}
+		
+	</script>
+	<!--link rel="stylesheet" type="text/css" href="*.css"-->
+	<!--script type="text/javascript" src=""><script-->
+</head>
+<body>
+	
+	
+	<div id="content">
+		<div id="progressBar" style="width:0px"></div>              <!--进度条-->
+		
+		<div id="track1" class="track"></div>
+		<div id="track2" class="track"></div>
+		<div id="track3" class="track"></div>
+		<div id="track4" class="track"></div>
+		<div id="span1" class="span"></div>
+		<div id="span2" class="span"></div>
+		<div id="span3" class="span"></div>
+		<div id="span4" class="span"></div>
+		<div id="score">score:<p id="scoreNumber">0</p></div>  			<!--分数-->
+		<div id="life">life:<p id="lifeNumber">100</p></div>				<!--生命值-->
+		<div id="combo">combo</div>
+	</div>
+
+
+    <!--要弹出==============↓↓↓↓↓↓↓↓↓↓↓↓↓=================的菜单-->
+	<div id="startMenu">
+		<!--要包含:开始游戏按钮、延迟修正进度条、回到主菜单页面   -->
+		<input id="startTheGame" type="button" value="start" onclick="gameStart()">	
+		<div id="amendTheDelay"></div>
+	</div>
+	<div id="breakMenu">   <!--这个菜单用来重新开始，退出到主菜单，暂停（有待商榷，）-->
+		<input id="breakGoToTheMainMenu" type="button"  value="main menu" onclick="">
+		<input id="breakRestart" type="button" value="restart" onclick="gameRestart()">
+	</div>
+	<div  id="finishMenu">
+		score:<p id="finalScore"></p>
+		<input id="goToTheMainMenu" type="button"  value="Main menu" onclick="">
+		<input id="restart" type="button"  value="restart" onclick="gameRestart()">
+	</div>
+	<div  id="failMenu">
+		<input id="failRestart" type="button"  value="restart" onclick="gameRestart()">
+		<input id="failGoToTheMainMenu" type="button"  value="Main menu" onclick="">
+	</div>
+	<!--要弹出===================↑↑↑↑↑↑↑↑↑↑↑↑↑==============的菜单-->
+
+	<!--audio src="src.mp3" autoplay="autoplay" controls="controls" style="top:1000px;"></audio-->
+
+
+	<!--textBox里面都是测试用的页面元素，开发完成后删掉-->
+	<div id="testBox">                                            
+		<input type="button" value="generateNote1" onclick="makeaNoteToTrack1()">
+		<input type="button" value="generateNote2" onclick="makeaNoteToTrack2()">
+		<input type="button" value="generateNote3" onclick="makeaNoteToTrack3()">
+		<input type="button" value="generateNote4" onclick="makeaNoteToTrack4()">
+		<input type="button" value="move" onclick="move()">
+		<input type="button" value="beatStart" onclick="beatStart()">
+		<p id="tmax+"></p>
+		<p id="tmax"></p>
+		<p id="tjust"></p>
+		<p id="tgood"></p>
+		<p id="tmiss"></p>
+		<p id="tcombo"></p>
+		<p id="tmaxCombo"></p>
+		<input type="button" value="generateaLongNote1" onclick="generateLong1()">
+		<input id="inputLength" type="text" >
+		<input type="button" value="startProgressBar" onclick="progr.progressing()">
+		<input type="button" value="pauseProgressBar" onclick="progr.pause()">
+		<input type="button" value="refreshProgressBar" onclick="progr.restart()">
+	</div>
+	<script>
+		function testStatistics(){
+			$("tmax+").innerHTML="max+:"+scoreBox.maxPlus;
+			$("tmax").innerHTML="max:"+scoreBox.max;
+			$("tjust").innerHTML="just:"+scoreBox.just;
+			$("tgood").innerHTML="good:"+scoreBox.good;
+			$("tmiss").innerHTML="miss:"+scoreBox.miss;
+			$("tcombo").innerHTML="combo:"+combo;
+			$("tmaxCombo").innerHTML="Maxcombo:"+scoreBox.maxCombo;
+			//-----以上为测试数据显示，以下为正式数据显示
+			$("lifeNumber").innerHTML=scoreBox.life+"";
+			scoreBox.calculateScore();
+			$("scoreNumber").innerHTML=scoreBox.score;
+			
+		}
+		setInterval(testStatistics,1000);
+		//$("progressBar").style.width="0px"; //fortest
+		
+	</script>
+	<!--div id="worker">
+		var testdata={
+			t1:0,
+			t2:0,
+			t3:0,
+			t4:0,
+		};
+		setInterval(function(){
+			self.postMessage(testdata);
+		},700);
+
+	</div-->
+	<div id="worker" style="display:none;">
+var timer = new Date();
+var StartTime= timer.getTime();
+var p = StartTime;               //时间戳
+var score;
+var numberOfNote=0;
+var bpm=111;                 //制作乐谱时自行修改
+var Con = (60*1000/bpm/8);   //比例常数
+var delay=0;
+var pausep;
+//var pauseFlag=false;
+
+var s=0;
+var flag=false;
+function readScore(){
+	if(s/2!==Math.round(s/2)){
+		if(flag==false){
+			numberOfNote+=score[s];
+			p=StartTime+numberOfNote*Con;
+			flag=true;
+
+		}
+		
+ 		var timer = new Date();
+ 		if(timer.getTime()-delay>p){
+ 			s+=1;
+ 			flag=false;
+ 			
+ 		}
+	}else{
+		//self.postMessage({message:"test",});
+		self.postMessage(score[s]);
+		s+=1;
+	}
+}
+
+
+//-------------下面这个json数组就是乐谱-----------------
+//self.postMessage({message:"test",});
+var score = [
+	{bpm:111,speed:2,duration:1969},              //乐谱开头必须要设置bpm和speed，speed不应该小于0.5
+	124,							//数字代表延迟时间（毫秒），注意数组中，奇数必为json对象（表示该时刻要发射的音符），偶数必须为延迟时间（大于等于0）
+	{t3:0},                         //150 bpm 四分音符等于400毫秒 ,32fen50haomiao 。0.00s：0.05s——1
+	17,
+	{t3:0},
+	15,
+	{t3:0},
+	11,
+	{t2:0},
+	16,
+	{t2:0},
+	16,
+	{t2:0},
+	11,
+	{t4:0},
+	16,
+	{t3:0},
+	22,
+	{t1:21},
+	11,
+	{t3:0},
+	11,
+	{t1:0,t4:0},
+	11,
+	{t4:0},
+	6,
+	{t2:0},
+	16,
+	{t4:0},
+	6,
+	{t1:0},     //17.
+	16,
+	{t3:0},
+    5,
+	{t1:0},
+	16,
+	{t2:0},
+	11,
+	{t4:0},
+	16,
+	{t1:0},
+	22,
+	{t1:0,t4:0},
+	80,
+	{t3:0},
+	11,
+	{t1:0},
+    16,
+	{t3:0},
+	16,
+	{t3:0},
+	11,
+	{t4:0},
+	16,
+	{t2:0},      //30
+    16,
+	{t2:0},
+	11,
+	{t1:0},
+    16,
+	{t3:0},
+	16,
+	{t3:0},
+	12,
+	{t4:0},
+	16,
+	{t2:0},
+	16,
+	{t2:0},
+	11,
+	{t4:0},
+    11,
+	{t4:0},
+	5,
+	{t4:16},
+	11,
+	{t3:0},
+	11,
+	{t3:0},    //43
+	5,
+	{t3:16},
+	11,
+	{t2:0},
+    11,
+	{t2:0},
+	16,
+	{t2:16},
+	11,
+	{t1:0},
+	10,
+	{t1:0},
+	6,
+	{t2:16},
+	11,
+	{t1:0,t4:0},
+    16,
+	{t1:0},
+	16,
+	{t1:0},
+	11,
+	{t4:16},
+	16,
+	{t3:0},      //60
+	11,
+	{t2:0,t4:0},
+	16,
+	{t2:0},
+    16,
+	{t2:0},
+	11,
+	{t3:0},
+	16,
+	{t3:0},
+	16,
+	{t3:0},
+	11,
+	{t2:0,t4:0},
+	10,
+	{t2:0},
+    6,
+	{t4:0},
+	12,
+	{t2:0},
+	10,
+	{t2:0},
+	11,
+	{t1:0,t3:0},     //75
+	11,
+	{t3:0},
+	5,
+	{t1:0},
+    5,
+	{t2:0},
+	10,
+	{t3:0},
+	10,
+	{t4:0},
+	16,
+	{t3:0},
+	22,
+	{t1:50},
+	0,
+	{t4:12},
+    11,
+	{t2:0},
+	11,
+	{t4:0},
+	18,
+	{t4:0},
+	11,
+	{t3:0},      
+	11,
+	{t1:0},    //90
+	22,
+	{t1:0},
+    11,
+	{t2:0},
+	11,
+	{t4:0},
+	22,
+	{t4:0},
+	10,
+	{t2:12},
+	11,
+	{t2:12},
+	11,
+	{t1:0},
+    10,
+	{t3:0},
+	22,
+	{t2:0},
+	11,
+	{t4:0},
+	22,
+	{t3:0},    //103
+	10,
+	{t2:12},
+	11,
+	{t1:0},
+    11,
+	{t4:0},
+	22,
+	{t4:0},
+	11,
+	{t4:0},
+	8,
+	{t4:0},
+	8,
+	{t4:0},
+	14,
+	{t1:0},
+    22,
+	{t2:0,t3:0},   //彩球
+	216,
+	{t2:12,t4:12},
+	11,
+	{t1:12,t3:12},
+	10,
+	{t4:0},   //122
+	11,
+	{t4:0},
+	6,
+	{t4:0},
+    16,
+	{t4:0},
+	11,
+	{t1:0},
+	8,
+	{t1:0},
+	14,
+	{t1:0},
+	22,
+	{t2:0},
+	16,
+	{t2:16},    //131
+	11,
+	{t3:0},
+	16,
+	{t3:16},
+    11,
+	{t2:0},
+	16,
+	{t1:0},
+	12,
+	{t4:0},
+	11,
+	{t1:0},
+	4,
+	{t4:0},
+	16,
+	{t3:0},    //140
+	22,
+	{t1:0},
+	7,
+	{t2:20},
+    18,
+	{t3:74},   //145
+	90,
+    {end:true}
+];
+                                                   //新版setInterval乐谱读取,
+
+var contr=setInterval(function(){readScore();},3);
+
+self.onmessage=function(event){                 //监听主线程的消息用来控制暂停和播放
+	var newData=event.data;
+	if(newData=="pause"){
+		var timer = new Date;
+		pausep=timer.getTime();
+		clearInterval(contr);
+	}else if(newData=="start"){
+		var timer = new Date;
+		self.postMessage(timer.getTime()-pausep);
+		delay+=(timer.getTime()-pausep);
+		
+		contr=setInterval(function(){readScore();},3);		
+	}
+}
+	</div>
+</body>
+</html>
